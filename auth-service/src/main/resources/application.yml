@@ -12,3 +12,8 @@ spring:
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.xml
     enabled: true
+jwt:
+  secret: FLKDSOFIDOKaslFDSLJFI1302U4I21KLKFLDASMF[pscvp[cx[pocvodspf
+  issuer: Nikita Korobkin
+  accessTokenExpirationMinutes: 15
+  refreshTokenExpirationDays: 7
