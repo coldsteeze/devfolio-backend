@@ -9,4 +9,8 @@ public interface AuthService {
     JwtResponse register(RegisterRequest registerRequest);
 
     JwtResponse login(LoginRequest loginRequest);
+
+    JwtResponse refreshToken(String refreshToken);
+
+    void logout(String refreshToken);
 }

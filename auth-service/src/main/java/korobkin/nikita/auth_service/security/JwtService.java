@@ -60,4 +60,9 @@ public class JwtService {
         DecodedJWT jwt = getVerifier().verify(token);
         return jwt.getClaim("email").asString();
     }
+
+    public UUID getUserIdFromToken(String token) throws JWTVerificationException {
+        DecodedJWT jwt = getVerifier().verify(token);
+        return UUID.fromString(jwt.getSubject());
+    }
 }

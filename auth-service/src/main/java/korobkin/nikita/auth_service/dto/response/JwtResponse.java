@@ -5,7 +5,7 @@ import lombok.Value;
 @Value
 public class JwtResponse {
 
-    String accessToken;   // короткоживущий токен
-    String refreshToken;  // долгоживущий токен
-    long expiresIn;       // через сколько секунд accessToken истечет
+    String accessToken;
+    String refreshToken;
+    long accessTokenExpiresIn;
 }
