@@ -1,6 +1,7 @@
 package korobkin.nikita.auth_service.service;
 
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
+import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.dto.response.JwtResponse;
 
@@ -10,7 +11,7 @@ public interface AuthService {
 
     JwtResponse login(LoginRequest loginRequest);
 
-    JwtResponse refreshToken(String refreshToken);
+    JwtResponse refreshToken(RefreshTokenRequest refreshToken);
 
-    void logout(String refreshToken);
+    void logout(RefreshTokenRequest refreshToken);
 }

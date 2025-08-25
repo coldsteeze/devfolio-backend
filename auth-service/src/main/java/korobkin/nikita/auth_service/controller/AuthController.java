@@ -33,12 +33,12 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<JwtResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
-        authService.logout(request.getRefreshToken());
+        authService.logout(request);
         return ResponseEntity.noContent().build();
     }
 }

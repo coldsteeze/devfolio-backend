@@ -3,6 +3,7 @@ package korobkin.nikita.auth_service.service.impl;
 import jakarta.transaction.Transactional;
 import korobkin.nikita.auth_service.config.JwtProperties;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
+import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.dto.response.JwtResponse;
 import korobkin.nikita.auth_service.entity.User;
@@ -99,18 +100,21 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    public void logout(String refreshToken) {
-        UUID userId = jwtService.getUserIdFromToken(refreshToken);
+    public void logout(RefreshTokenRequest request) {
+        UUID userId = jwtService.getUserIdFromToken(request.getRefreshToken());
         tokenService.deleteRefreshToken(userId);
         log.info("User logged out: userId={}", userId);
     }
 
-    public JwtResponse refreshToken(String refreshToken) {
-        UUID userId = jwtService.getUserIdFromToken(refreshToken);
-        String email = jwtService.getEmailFromToken(refreshToken);
+    public JwtResponse refreshToken(RefreshTokenRequest request) {
+        UUID userId = jwtService.getUserIdFromToken(request.getRefreshToken());
+        String email = jwtService.getEmailFromToken(request.getRefreshToken());
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidRefreshTokenException("User not found"));
 
         String storedRefresh = tokenService.getRefreshToken(userId);
-        if (!refreshToken.equals(storedRefresh)) {
+        if (storedRefresh == null || !storedRefresh.equals(request.getRefreshToken())) {
             log.warn("Invalid refresh token for userId={}, email={}", userId, email);
             throw new InvalidRefreshTokenException("Invalid or expired refresh token");
         }
@@ -126,6 +130,10 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Refresh token updated for userId={}, email={}", userId, email);
 
-        return new JwtResponse(access, newRefresh, jwtProperties.getAccessTokenExpirationMinutes());
+        return new JwtResponse(
+                access,
+                newRefresh,
+                jwtProperties.getAccessTokenExpirationMinutes()
+        );
     }
 }
