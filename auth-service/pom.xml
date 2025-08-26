@@ -6,7 +6,7 @@
 		<groupId>devfolio</groupId>
 		<artifactId>devfolio-project</artifactId>
 		<version>1.0.0</version>
-		<packaging>../pom.xml</packaging>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<groupId>korobkin.nikita</groupId>
 	<artifactId>auth-service</artifactId>
