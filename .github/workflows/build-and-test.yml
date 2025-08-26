@@ -50,4 +50,4 @@ jobs:
           done
 
       - name: Build and test
-        run: ./gradlew clean build
+        run: mvn clean install
