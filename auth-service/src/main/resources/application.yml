@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_service
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000
+jwt:
+  secret: FLKDSOFIDOKaslFDSLJFI1302U4I21KLKFLDASMF[pscvp[cx[pocvodspf
+  issuer: Nikita Korobkin
+  accessTokenExpirationMinutes: 15
+  refreshTokenExpirationDays: 7
