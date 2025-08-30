@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_service
+    username: postgres
+    password: postgres
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000
+
+jwt:
+  secret: my-dev-secret
+  issuer: dev-issuer
+  access-token-expiration-minutes: 15
+  refresh-token-expiration-days: 7
+
+
+
+

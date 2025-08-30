@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: test
+    password: test
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 1000
+  liquibase:
+    enabled: false
+
+jwt:
+  secret: test-secret
+  issuer: test
+  access-token-expiration-minutes: 1
+  refresh-token-expiration-days: 1
