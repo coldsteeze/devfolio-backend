@@ -1,15 +1,27 @@
 services:
-  postgres:
+  auth_postgres:
     image: postgres:16-alpine
     container_name: auth_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: auth_service
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - auth_postgres_data:/var/lib/postgresql/data
+
+  user_profile_postgres:
+    image: postgres:16-alpine
+    container_name: user_profile_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: user_profile_service
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_profile_postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:latest
@@ -23,13 +35,13 @@ services:
     image: coldsteeze/auth-service:latest
     container_name: auth_app
     depends_on:
-      - postgres
+      - auth_postgres
       - redis
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: auth_service
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       JWT_SECRET: ${JWT_SECRET}
@@ -39,5 +51,21 @@ services:
     ports:
       - "8080:8080"
 
+  user-profile-service:
+    build:
+      context: ./user-profile-service
+    image: coldsteeze/user-profile-service:latest
+    container_name: user_profile_app
+    depends_on:
+      - user_profile_postgres
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: user_profile_service
+    ports:
+      - "8081:8080"
+
 volumes:
-  postgres_data:
+  auth_postgres_data:
+  user_profile_postgres_data:
