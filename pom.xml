@@ -12,6 +12,7 @@
     <modules>
         <module>auth-service</module>
         <module>user-profile-service</module>
+        <module>common-events</module>
     </modules>
 
     <properties>
