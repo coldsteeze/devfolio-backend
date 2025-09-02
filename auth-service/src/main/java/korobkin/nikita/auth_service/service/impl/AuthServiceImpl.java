@@ -10,12 +10,14 @@ import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
+import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.security.JwtService;
 import korobkin.nikita.auth_service.security.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.auth_service.service.TokenCacheService;
+import korobkin.nikita.events.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenCacheService tokenService;
     private final JwtProperties jwtProperties;
+    private final UserEventProducer userEventProducer;
 
     @Override
     @Transactional
@@ -64,6 +67,8 @@ public class AuthServiceImpl implements AuthService {
                 refresh,
                 jwtProperties.getRefreshTokenExpirationDays()
         );
+
+        userEventProducer.sendUserCreated(new UserCreatedEvent(user.getId()));
 
         return new JwtResponse(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
     }

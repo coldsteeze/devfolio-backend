@@ -10,12 +10,12 @@ spring:
       port: 6379
       timeout: 60000
 
+  kafka:
+    bootstrap-servers: localhost:9094
+
 jwt:
   secret: my-dev-secret
   issuer: dev-issuer
   access-token-expiration-minutes: 15
   refresh-token-expiration-days: 7
-
-
-
 
