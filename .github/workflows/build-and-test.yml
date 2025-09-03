@@ -46,7 +46,7 @@ jobs:
           KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
           ALLOW_PLAINTEXT_LISTENER: yes
         ports:
-          - 9092:9092
+          - 9094:9094
 
     steps:
       - name: Checkout code
