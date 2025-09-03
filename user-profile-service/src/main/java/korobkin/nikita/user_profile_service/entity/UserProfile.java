@@ -18,7 +18,7 @@ public class UserProfile {
     @Id
     private UUID userId;
 
-    @Column(name = "nickname", unique = true, nullable = false)
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
     @Column(name = "avatar_url")

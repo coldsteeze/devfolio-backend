@@ -3,3 +3,9 @@ spring:
     url: jdbc:postgresql://localhost:5433/user_profile_service
     username: postgres
     password: postgres
+
+  kafka:
+    bootstrap-servers: localhost:9094
+
+server:
+  port: 8081
