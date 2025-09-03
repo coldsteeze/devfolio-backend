@@ -14,6 +14,7 @@ spring:
     consumer:
       group-id: user-profile-group
       auto-offset-reset: earliest
+      bootstrap-servers: kafka:9092
 
 app:
   kafka:
