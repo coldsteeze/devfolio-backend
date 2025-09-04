@@ -10,9 +10,13 @@ spring:
       port: ${REDIS_PORT}
       timeout: 60000
 
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${JWT_ISSUER}
   accessTokenExpirationMinutes: ${JWT_ACCESS_EXP_MINUTES}
   refreshTokenExpirationDays: ${JWT_REFRESH_EXP_DAYS}
+
 
