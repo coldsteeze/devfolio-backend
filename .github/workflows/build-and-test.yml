@@ -42,7 +42,7 @@ jobs:
           KAFKA_CFG_NODE_ID: 1
           KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
           KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
           KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
           ALLOW_PLAINTEXT_LISTENER: yes
         ports:
@@ -79,7 +79,7 @@ jobs:
       - name: Wait for Kafka to be ready
         run: |
           for i in {1..10}; do
-            nc -z localhost 9094 && echo "Kafka is up" && break
+            nc -z localhost 9092 && echo "Kafka is up" && break
             echo "Waiting for kafka..."
             sleep 3
           done
