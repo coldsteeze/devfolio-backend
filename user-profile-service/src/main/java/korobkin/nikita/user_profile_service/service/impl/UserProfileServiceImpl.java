@@ -38,7 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(UUID id) {
         UserProfile userProfile = userProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User with this id not found"));
+                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
 
         return userProfileMapper.toDto(userProfile);
     }

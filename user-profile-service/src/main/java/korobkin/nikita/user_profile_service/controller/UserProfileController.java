@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/profiles")
@@ -29,5 +31,10 @@ public class UserProfileController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(userProfileService.updateUserProfileData(principal.userId(), request));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable("userId") UUID userId) {
+        return ResponseEntity.ok(userProfileService.getUserProfile(userId));
     }
 }
