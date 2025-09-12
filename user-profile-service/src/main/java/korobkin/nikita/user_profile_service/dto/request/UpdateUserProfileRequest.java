@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.URL;
 
+import java.util.Map;
+import java.util.Set;
+
 @Getter
 @Setter
 public class UpdateUserProfileRequest {
@@ -25,4 +28,8 @@ public class UpdateUserProfileRequest {
 
     @URL(message = "Avatar URL must be a valid URL")
     private String avatarUrl;
+
+    private Set<String> skills;
+
+    private Map<String, String> links;
 }
