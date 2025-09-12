@@ -26,11 +26,11 @@ public class UserProfileController {
     }
 
     @PostMapping
-    public ResponseEntity<UserProfileResponse> updateMyProfile(
+    public ResponseEntity<UserProfileResponse> fillMyProfile(
             @Valid @RequestBody UpdateUserProfileRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(userProfileService.updateUserProfileData(principal.userId(), request));
+                .body(userProfileService.fillUserProfile(principal.userId(), request));
     }
 
     @GetMapping("/{userId}")

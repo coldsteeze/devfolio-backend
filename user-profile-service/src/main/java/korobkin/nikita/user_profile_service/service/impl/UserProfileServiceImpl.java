@@ -45,7 +45,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     @Transactional
-    public UserProfileResponse updateUserProfileData(UUID id, UpdateUserProfileRequest request) {
+    public UserProfileResponse fillUserProfile(UUID id, UpdateUserProfileRequest request) {
         UserProfile userProfile = userProfileRepository.findById(id)
                 .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
 
