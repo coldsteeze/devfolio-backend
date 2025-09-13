@@ -7,11 +7,16 @@ import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -51,5 +56,12 @@ public class UserProfileController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateUserProfileAvatarRequest request) {
         return ResponseEntity.ok(userProfileService.updateUserProfileAvatar(principal.userId(), request));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<UserProfileResponse>> searchProfilesBySkills(
+            @RequestParam("skills") Set<String> skills,
+            @PageableDefault(sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(userProfileService.findBySkills(skills, pageable));
     }
 }

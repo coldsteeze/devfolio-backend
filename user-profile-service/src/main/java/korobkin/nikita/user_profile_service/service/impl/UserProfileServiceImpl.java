@@ -12,10 +12,13 @@ import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -75,6 +78,20 @@ public class UserProfileServiceImpl implements UserProfileService {
         log.info("UserProfile with id: {} updated avatar to {}", id, request.getAvatarUrl());
 
         return userProfileMapper.toDto(userProfile);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable) {
+        Page<UserProfile> profiles;
+
+        if (skills.isEmpty()) {
+            profiles = userProfileRepository.findAll(pageable);
+        } else {
+            profiles = userProfileRepository.findBySkillsIn(skills, pageable);
+        }
+
+        return profiles.map(userProfileMapper::toDto);
     }
 
 
