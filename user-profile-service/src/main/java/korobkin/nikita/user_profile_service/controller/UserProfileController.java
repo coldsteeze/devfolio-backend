@@ -37,4 +37,11 @@ public class UserProfileController {
     public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable("userId") UUID userId) {
         return ResponseEntity.ok(userProfileService.getUserProfile(userId));
     }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserProfileResponse> updateMyProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+        return ResponseEntity.ok(userProfileService.updateUserProfile(principal.userId(), request));
+    }
 }

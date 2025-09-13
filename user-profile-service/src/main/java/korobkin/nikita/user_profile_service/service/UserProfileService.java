@@ -13,4 +13,6 @@ public interface UserProfileService {
     UserProfileResponse getUserProfile(UUID id);
 
     UserProfileResponse fillUserProfile(UUID id, UpdateUserProfileRequest request);
+
+    UserProfileResponse updateUserProfile(UUID id, UpdateUserProfileRequest request);
 }

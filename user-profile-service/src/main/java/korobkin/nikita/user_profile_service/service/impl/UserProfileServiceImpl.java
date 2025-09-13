@@ -46,18 +46,35 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public UserProfileResponse fillUserProfile(UUID id, UpdateUserProfileRequest request) {
-        UserProfile userProfile = userProfileRepository.findById(id)
-                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
-
-        if (userProfileRepository.existsByNickname(request.getNickname())) {
-            throw new NicknameAlreadyTakenException("Nickname already exists");
-        }
-
-        userProfileMapper.updateEntityFromDto(request, userProfile);
+        UserProfile userProfile = findAndValidateProfile(id, request);
         userProfile.setUpdatedAt(LocalDateTime.now());
         userProfileRepository.save(userProfile);
         log.info("UserProfile with id: {} data has been filled in DB", userProfile.getUserId());
 
         return userProfileMapper.toDto(userProfile);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateUserProfile(UUID id, UpdateUserProfileRequest request) {
+        UserProfile userProfile = findAndValidateProfile(id, request);
+        userProfile.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(userProfile);
+        log.info("UserProfile with id: {} data has been updated in DB", userProfile.getUserId());
+
+        return userProfileMapper.toDto(userProfile);
+    }
+
+    private UserProfile findAndValidateProfile(UUID id, UpdateUserProfileRequest request) {
+        UserProfile userProfile = userProfileRepository.findById(id)
+                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
+
+        if (userProfileRepository.existsByNicknameAndUserIdNot(request.getNickname(), id)) {
+            throw new NicknameAlreadyTakenException("Nickname already exists");
+        }
+
+        userProfileMapper.updateEntityFromDto(request, userProfile);
+
+        return userProfile;
     }
 }
