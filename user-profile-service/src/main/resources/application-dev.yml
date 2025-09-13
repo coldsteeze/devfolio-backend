@@ -9,3 +9,7 @@ spring:
 
 server:
   port: 8081
+
+jwt:
+  secret: my-dev-secret
+  issuer: dev-issuer

@@ -20,7 +20,7 @@ public class UserCreatedListener {
     )
     public void handleUserCreated(UserCreatedEvent event) {
         log.info("received UserCreatedEvent: {}", event);
-        userProfileService.createUserProfile(event);
+        userProfileService.createUserEmptyProfile(event);
     }
 }
 

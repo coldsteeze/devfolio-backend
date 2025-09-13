@@ -21,6 +21,15 @@ public class UserProfile {
     @Column(name = "nickname", unique = true)
     private String nickname;
 
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "bio")
+    private String bio;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 
