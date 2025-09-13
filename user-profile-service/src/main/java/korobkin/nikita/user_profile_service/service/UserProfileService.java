@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.service;
 
 import korobkin.nikita.events.UserCreatedEvent;
+import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 
@@ -15,4 +16,6 @@ public interface UserProfileService {
     UserProfileResponse fillUserProfile(UUID id, UpdateUserProfileRequest request);
 
     UserProfileResponse updateUserProfile(UUID id, UpdateUserProfileRequest request);
+
+    UserProfileResponse updateUserProfileAvatar(UUID id, UpdateUserProfileAvatarRequest request);
 }

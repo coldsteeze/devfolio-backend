@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.controller;
 
 import jakarta.validation.Valid;
+import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.UserPrincipal;
@@ -43,5 +44,12 @@ public class UserProfileController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateUserProfileRequest request) {
         return ResponseEntity.ok(userProfileService.updateUserProfile(principal.userId(), request));
+    }
+
+    @PatchMapping("/me/avatar")
+    public ResponseEntity<UserProfileResponse> updateProfileAvatar(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateUserProfileAvatarRequest request) {
+        return ResponseEntity.ok(userProfileService.updateUserProfileAvatar(principal.userId(), request));
     }
 }

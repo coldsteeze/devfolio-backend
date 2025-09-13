@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.service.impl;
 
 import korobkin.nikita.events.UserCreatedEvent;
+import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
@@ -37,8 +38,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(UUID id) {
-        UserProfile userProfile = userProfileRepository.findById(id)
-                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
+        UserProfile userProfile = findProfileById(id);
 
         return userProfileMapper.toDto(userProfile);
     }
@@ -65,9 +65,21 @@ public class UserProfileServiceImpl implements UserProfileService {
         return userProfileMapper.toDto(userProfile);
     }
 
+    @Override
+    @Transactional
+    public UserProfileResponse updateUserProfileAvatar(UUID id, UpdateUserProfileAvatarRequest request) {
+        UserProfile userProfile = findProfileById(id);
+        userProfile.setUpdatedAt(LocalDateTime.now());
+        userProfile.setAvatarUrl(request.getAvatarUrl());
+        userProfileRepository.save(userProfile);
+        log.info("UserProfile with id: {} updated avatar to {}", id, request.getAvatarUrl());
+
+        return userProfileMapper.toDto(userProfile);
+    }
+
+
     private UserProfile findAndValidateProfile(UUID id, UpdateUserProfileRequest request) {
-        UserProfile userProfile = userProfileRepository.findById(id)
-                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
+        UserProfile userProfile = findProfileById(id);
 
         if (userProfileRepository.existsByNicknameAndUserIdNot(request.getNickname(), id)) {
             throw new NicknameAlreadyTakenException("Nickname already exists");
@@ -77,4 +89,10 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         return userProfile;
     }
+
+    private UserProfile findProfileById(UUID id) {
+        return userProfileRepository.findById(id)
+                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
+    }
 }
+
