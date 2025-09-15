@@ -23,4 +23,6 @@ public interface UserProfileService {
     UserProfileResponse updateUserProfileAvatar(UUID id, UpdateUserProfileAvatarRequest request);
 
     Page<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable);
+
+    void deleteUserProfile(UUID id);
 }

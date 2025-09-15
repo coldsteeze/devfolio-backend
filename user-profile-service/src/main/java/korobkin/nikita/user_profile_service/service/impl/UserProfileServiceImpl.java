@@ -1,12 +1,14 @@
 package korobkin.nikita.user_profile_service.service.impl;
 
 import korobkin.nikita.events.UserCreatedEvent;
+import korobkin.nikita.events.UserDeletedEvent;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
+import korobkin.nikita.user_profile_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.user_profile_service.mapper.UserProfileMapper;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
@@ -28,6 +30,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
+    private final UserEventProducer  userEventProducer;
 
     @Override
     @Transactional
@@ -94,6 +97,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         return profiles.map(userProfileMapper::toDto);
     }
 
+    @Override
+    @Transactional
+    public void deleteUserProfile(UUID id) {
+        userProfileRepository.deleteById(id);
+        log.info("UserProfile with id: {} delete in DB", id);
+        userEventProducer.sendUserDeleted(new UserDeletedEvent(id));
+    }
 
     private UserProfile findAndValidateProfile(UUID id, UpdateUserProfileRequest request) {
         UserProfile userProfile = findProfileById(id);

@@ -15,7 +15,7 @@ public class UserCreatedListener {
     private final UserProfileService userProfileService;
 
     @KafkaListener(
-            topics = "${app.kafka.topics.user-created}",
+            topics = "#{@kafkaTopicProperties.userCreated}",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleUserCreated(UserCreatedEvent event) {
