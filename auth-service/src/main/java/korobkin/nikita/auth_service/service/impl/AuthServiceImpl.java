@@ -18,6 +18,7 @@ import korobkin.nikita.auth_service.security.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.events.UserCreatedEvent;
+import korobkin.nikita.events.UserDeletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -109,6 +110,14 @@ public class AuthServiceImpl implements AuthService {
         UUID userId = jwtService.getUserIdFromToken(request.getRefreshToken());
         tokenService.deleteRefreshToken(userId);
         log.info("User logged out: userId={}", userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(UserDeletedEvent userDeletedEvent) {
+        userRepository.deleteById(userDeletedEvent.userId());
+        log.info("User deleted successfully: userId={}", userDeletedEvent.userId());
+        tokenService.deleteRefreshToken(userDeletedEvent.userId());
     }
 
     public JwtResponse refreshToken(RefreshTokenRequest request) {
