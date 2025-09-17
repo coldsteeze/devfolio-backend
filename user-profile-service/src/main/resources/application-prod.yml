@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5433/${PROFILE_SERVICE_POSTGRES_DB}
+    username: ${PROFILES_SERVICE_POSTGRES_USER}
+    password: ${PROFILE_SERVICE_POSTGRES_PASSWORD}
+
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: ${JWT_ISSUER}

@@ -14,8 +14,12 @@ spring:
     consumer:
       group-id: user-profile-group
       auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 app:
   kafka:
     topics:
       user-created: user-created
+      user-deleted: user-deleted

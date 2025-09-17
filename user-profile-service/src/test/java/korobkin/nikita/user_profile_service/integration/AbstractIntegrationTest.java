@@ -1,6 +1,5 @@
-package korobkin.nikita.auth_service.integration;
+package korobkin.nikita.user_profile_service.integration;
 
-import com.redis.testcontainers.RedisContainer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -23,10 +22,6 @@ public abstract class AbstractIntegrationTest {
             .withPassword("test");
 
     @Container
-    static RedisContainer redis = new RedisContainer("redis:latest")
-            .withExposedPorts(6379);
-
-    @Container
     static KafkaContainer kafka = new KafkaContainer(
             DockerImageName.parse("apache/kafka:3.7.0"));
 
@@ -36,10 +31,6 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
 
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
-
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
     }
 }
-

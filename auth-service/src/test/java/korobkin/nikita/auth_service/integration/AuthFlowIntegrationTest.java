@@ -10,6 +10,7 @@ import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
+import korobkin.nikita.events.UserDeletedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -111,5 +112,22 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> authService.refreshToken(request))
                 .isInstanceOf(JWTVerificationException.class);
+    }
+
+    @Test
+    void deleteUser_success() {
+        RegisterRequest register = new RegisterRequest();
+        register.setEmail("deleted@mail.ru");
+        register.setPassword("pass123");
+        authService.register(register);
+
+        User user = userRepository.findByEmail("deleted@mail.ru")
+                .orElseThrow(() -> new RuntimeException("User not found after registration"));
+
+        assertThat(userRepository.findById(user.getId())).isPresent();
+
+        authService.deleteUser(new UserDeletedEvent(user.getId()));
+
+        assertThat(userRepository.findById(user.getId())).isEmpty();
     }
 }

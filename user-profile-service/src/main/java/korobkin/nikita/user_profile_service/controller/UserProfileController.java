@@ -64,4 +64,10 @@ public class UserProfileController {
             @PageableDefault(sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(userProfileService.findBySkills(skills, pageable));
     }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMyProfile(@AuthenticationPrincipal UserPrincipal principal) {
+        userProfileService.deleteUserProfile(principal.userId());
+        return ResponseEntity.noContent().build();
+    }
 }
