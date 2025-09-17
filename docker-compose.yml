@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: auth_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: auth_service
+      POSTGRES_USER: ${AUTH_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AUTH_SERVICE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AUTH_SERVICE_POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -15,9 +15,9 @@ services:
     image: postgres:16-alpine
     container_name: user_profile_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: user_profile_service
+      POSTGRES_USER: ${PROFILE_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PROFILE_SERVICE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${PROFILE_SERVICE_POSTGRES_DB}
     ports:
       - "5433:5432"
     volumes:
@@ -55,6 +55,7 @@ services:
     depends_on:
       - auth_postgres
       - redis
+      - kafka
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -76,6 +77,7 @@ services:
     container_name: user_profile_app
     depends_on:
       - user_profile_postgres
+      - kafka
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       POSTGRES_USER: ${POSTGRES_USER}
