@@ -11,7 +11,7 @@ spring:
       timeout: 60000
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9094
 
 server:
   port: 8081
