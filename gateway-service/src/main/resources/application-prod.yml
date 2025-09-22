@@ -1,9 +1,9 @@
 services:
-  auth-service-uri: ${AUTH-SERVICE-URI}
-  user-profile-service-uri: ${USER-PROFILE-SERVICE-URI}
+  auth-service-uri: ${AUTH_SERVICE_URI}
+  user-profile-service-uri: ${USER_PROFILE_SERVICE_URI}
 
 cors:
-    frontend-url: ${FRONTEND-URL}
+    frontend-url: ${FRONTEND_URL}
 
 jwt:
   secret: ${JWT_SECRET}
