@@ -13,9 +13,6 @@ spring:
   kafka:
     bootstrap-servers: localhost:9094
 
-server:
-  port: 8081
-
 jwt:
   secret: my-dev-secret
   issuer: dev-issuer
