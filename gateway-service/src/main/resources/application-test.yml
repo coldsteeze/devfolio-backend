@@ -1,0 +1,10 @@
+jwt:
+  secret: test-secret
+  issuer: test-issuer
+
+  public-endpoints:
+    - /api/auth/login
+    - /api/auth/register
+
+cors:
+  frontend-url: http://localhost:63342
