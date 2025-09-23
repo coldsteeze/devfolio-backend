@@ -51,7 +51,6 @@ services:
     build:
       context: ./auth-service
     image: coldsteeze/auth-service:latest
-    container_name: auth_app
     depends_on:
       - auth_postgres
       - redis
@@ -69,13 +68,12 @@ services:
       JWT_REFRESH_EXP_DAYS: ${JWT_REFRESH_EXP_DAYS}
       BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
     ports:
-      - "8080:8080"
+      - "8081:8080"
 
   user-profile-service:
     build:
       context: ./user-profile-service
     image: coldsteeze/user-profile-service:latest
-    container_name: user_profile_app
     depends_on:
       - user_profile_postgres
       - kafka
@@ -88,7 +86,23 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
     ports:
-      - "8081:8080"
+      - "8082:8080"
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+    image: coldsteeze/gateway-service:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      AUTH_SERVICE_URI: ${AUTH_SERVICE_URI}
+      USER_PROFILE_SERVICE_URI: ${USER_PROFILE_SERVICE_URI}
+      FRONTEND_URL: ${FRONTEND_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      JWT_PUBLIC_ENDPOINTS: ${JWT_PUBLIC_ENDPOINTS}
+    ports:
+      - "8080:8080"
+
 
 volumes:
   auth_postgres_data:
