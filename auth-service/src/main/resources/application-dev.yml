@@ -22,3 +22,12 @@ jwt:
   access-token-expiration-minutes: 15
   refresh-token-expiration-days: 7
 
+auth:
+  cookie:
+    name: refreshToken
+    http-only: true
+    secure: false
+    same-site: None
+    path: /api/auth
+    max-age-days: 7
+

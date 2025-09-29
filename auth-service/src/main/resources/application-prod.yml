@@ -1,22 +1,29 @@
 spring:
   datasource:
-    url: jdbc:postgresql://auth_postgres:5432/${AUTH_SERVICE_POSTGRES_DB}
-    username: ${AUTH_SERVICE_POSTGRES_USER}
-    password: ${AUTH_SERVICE_POSTGRES_PASSWORD}
+    url: jdbc:postgresql://auth_postgres:5432/${AUTH_SERVICE_POSTGRES_DB:auth_db}
+    username: ${AUTH_SERVICE_POSTGRES_USER:postgres}
+    password: ${AUTH_SERVICE_POSTGRES_PASSWORD:postgres}
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      timeout: 60000
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: ${REDIS_TIMEOUT:60000}
 
   kafka:
-    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+    bootstrap-servers: ${BOOTSTRAP_SERVERS:kafka:9092}
 
 jwt:
-  secret: ${JWT_SECRET}
-  issuer: ${JWT_ISSUER}
-  accessTokenExpirationMinutes: ${JWT_ACCESS_EXP_MINUTES}
-  refreshTokenExpirationDays: ${JWT_REFRESH_EXP_DAYS}
+  secret: ${JWT_SECRET:devfolio-secret}
+  issuer: ${JWT_ISSUER:devfolio}
+  accessTokenExpirationMinutes: ${JWT_ACCESS_EXP_MINUTES:15}
+  refreshTokenExpirationDays: ${JWT_REFRESH_EXP_DAYS:7}
 
-
+auth:
+  cookie:
+    name: ${REFRESH_TOKEN:refreshToken}
+    httpOnly: ${HTTP_ONLY:true}
+    secure: ${SECURE:false}
+    sameSite: ${SAME_SITE:Lax}
+    path: /api/auth
+    maxAgeDays: ${MAX_AGE_DAYS:7}
