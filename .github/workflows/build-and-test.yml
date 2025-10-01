@@ -35,7 +35,7 @@ jobs:
           - 6379:6379
 
       kafka:
-        image: bitnami/kafka:latest
+        image: confluentinc/cp-kafka:latest
         env:
           KAFKA_ENABLE_KRAFT: yes
           KAFKA_CFG_PROCESS_ROLES: broker,controller
