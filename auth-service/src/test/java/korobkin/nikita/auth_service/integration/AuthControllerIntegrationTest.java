@@ -1,9 +1,10 @@
 package korobkin.nikita.auth_service.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import korobkin.nikita.auth_service.config.AuthCookieProperties;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
-import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class AuthControllerTest extends AbstractIntegrationTest{
+class AuthControllerIntegrationTest extends AbstractIntegrationTest{
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,6 +33,9 @@ class AuthControllerTest extends AbstractIntegrationTest{
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private AuthCookieProperties authCookieProperties;
 
     @BeforeEach
     void cleanDb() {
@@ -50,7 +54,16 @@ class AuthControllerTest extends AbstractIntegrationTest{
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNotEmpty())
+                .andExpect(cookie().exists(authCookieProperties.getName()))
+                .andExpect(cookie().httpOnly(authCookieProperties.getName(),
+                        authCookieProperties.isHttpOnly()))
+                .andExpect(cookie().secure(authCookieProperties.getName(),
+                        authCookieProperties.isSecure()))
+                .andExpect(cookie().path(authCookieProperties.getName(),
+                        authCookieProperties.getPath()))
+                .andExpect(cookie().maxAge(authCookieProperties.getName(),
+                        (int) authCookieProperties.getMaxAgeDays() * 24 * 3600));
     }
 
     @Test
@@ -80,7 +93,18 @@ class AuthControllerTest extends AbstractIntegrationTest{
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(register)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNotEmpty())
+                .andExpect(cookie().exists(authCookieProperties.getName()))
+                .andExpect(cookie().httpOnly(authCookieProperties.getName(),
+                        authCookieProperties.isHttpOnly()))
+                .andExpect(cookie().secure(authCookieProperties.getName(),
+                        authCookieProperties.isSecure()))
+                .andExpect(cookie().path(authCookieProperties.getName(),
+                        authCookieProperties.getPath()))
+                .andExpect(cookie().maxAge(authCookieProperties.getName(),
+                        (int) authCookieProperties.getMaxAgeDays() * 24 * 3600));
 
         LoginRequest login = new LoginRequest();
         login.setEmail("login@mail.com");
@@ -91,17 +115,27 @@ class AuthControllerTest extends AbstractIntegrationTest{
                         .content(objectMapper.writeValueAsString(login)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty());
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNotEmpty())
+                .andExpect(cookie().exists(authCookieProperties.getName()))
+                .andExpect(cookie().httpOnly(authCookieProperties.getName(),
+                        authCookieProperties.isHttpOnly()))
+                .andExpect(cookie().secure(authCookieProperties.getName(),
+                        authCookieProperties.isSecure()))
+                .andExpect(cookie().path(authCookieProperties.getName(),
+                        authCookieProperties.getPath()))
+                .andExpect(cookie().maxAge(authCookieProperties.getName(),
+                        (int) authCookieProperties.getMaxAgeDays() * 24 * 3600));
     }
 
     @Test
     void refreshToken_invalidToken_fails() throws Exception {
-        RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken("aaa.bbb.ccc");
+        String token = "aaa.bbb.ccc";
+
+        Cookie cookie = new Cookie(authCookieProperties.getName(), token);
 
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .cookie(cookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message")
                         .value("Invalid or expired refresh token"));

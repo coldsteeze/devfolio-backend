@@ -34,3 +34,13 @@ jwt:
   issuer: test
   access-token-expiration-minutes: 1
   refresh-token-expiration-days: 1
+
+auth:
+  cookie:
+    name: refreshToken
+    http-only: true
+    secure: false
+    same-site: None
+    path: /api/auth
+    max-age-days: 7
+
