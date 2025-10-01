@@ -83,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
 
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             User user = userDetails.getUser();
+            user.setLoggedAt(LocalDateTime.now());
 
             log.info("User logged in: userId={}, email={}", user.getId(), user.getEmail());
 
