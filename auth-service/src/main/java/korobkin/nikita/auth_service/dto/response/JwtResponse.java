@@ -6,6 +6,5 @@ import lombok.Value;
 public class JwtResponse {
 
     String accessToken;
-    String refreshToken;
     long accessTokenExpiresIn;
 }

@@ -2,10 +2,9 @@ package korobkin.nikita.auth_service.service.impl;
 
 import jakarta.transaction.Transactional;
 import korobkin.nikita.auth_service.config.JwtProperties;
+import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
-import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
-import korobkin.nikita.auth_service.dto.response.JwtResponse;
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
@@ -47,7 +46,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public JwtResponse register(RegisterRequest registerRequest) {
+    public JwtTokens register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             log.warn("Registration failed: email {} is already taken", registerRequest.getEmail());
             throw new UserAlreadyExistsException("User with this email already exists");
@@ -71,12 +70,12 @@ public class AuthServiceImpl implements AuthService {
 
         userEventProducer.sendUserCreated(new UserCreatedEvent(user.getId()));
 
-        return new JwtResponse(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
+        return new JwtTokens(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
     }
 
     @Override
     @Transactional
-    public JwtResponse login(LoginRequest loginRequest) {
+    public JwtTokens login(LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
@@ -84,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
 
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             User user = userDetails.getUser();
+            user.setLoggedAt(LocalDateTime.now());
 
             log.info("User logged in: userId={}, email={}", user.getId(), user.getEmail());
 
@@ -96,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
                     jwtProperties.getRefreshTokenExpirationDays()
             );
 
-            return new JwtResponse(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
+            return new JwtTokens(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
         } catch (BadCredentialsException e) {
             log.warn("Invalid login attempt for email: {}", loginRequest.getEmail());
             throw new InvalidCredentialsException("Invalid email or password");
@@ -106,8 +106,8 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    public void logout(RefreshTokenRequest request) {
-        UUID userId = jwtService.getUserIdFromToken(request.getRefreshToken());
+    public void logout(String refreshToken) {
+        UUID userId = jwtService.getUserIdFromToken(refreshToken);
         tokenService.deleteRefreshToken(userId);
         log.info("User logged out: userId={}", userId);
     }
@@ -120,15 +120,15 @@ public class AuthServiceImpl implements AuthService {
         tokenService.deleteRefreshToken(userDeletedEvent.userId());
     }
 
-    public JwtResponse refreshToken(RefreshTokenRequest request) {
-        UUID userId = jwtService.getUserIdFromToken(request.getRefreshToken());
-        String email = jwtService.getEmailFromToken(request.getRefreshToken());
+    public JwtTokens refreshToken(String refreshToken) {
+        UUID userId = jwtService.getUserIdFromToken(refreshToken);
+        String email = jwtService.getEmailFromToken(refreshToken);
 
         userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidRefreshTokenException("User not found"));
 
         String storedRefresh = tokenService.getRefreshToken(userId);
-        if (storedRefresh == null || !storedRefresh.equals(request.getRefreshToken())) {
+        if (storedRefresh == null || !storedRefresh.equals(refreshToken)) {
             log.warn("Invalid refresh token for userId={}, email={}", userId, email);
             throw new InvalidRefreshTokenException("Invalid or expired refresh token");
         }
@@ -144,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Refresh token updated for userId={}, email={}", userId, email);
 
-        return new JwtResponse(
+        return new JwtTokens(
                 access,
                 newRefresh,
                 jwtProperties.getAccessTokenExpirationMinutes()

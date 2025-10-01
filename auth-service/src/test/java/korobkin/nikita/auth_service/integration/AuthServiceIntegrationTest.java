@@ -1,10 +1,9 @@
 package korobkin.nikita.auth_service.integration;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
-import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
-import korobkin.nikita.auth_service.dto.response.JwtResponse;
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
@@ -18,7 +17,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class AuthFlowIntegrationTest extends AbstractIntegrationTest {
+class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private AuthService authService;
@@ -35,7 +34,7 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
         request.setEmail("newuser@mail.com");
         request.setPassword("pass123");
 
-        JwtResponse tokens = authService.register(request);
+        JwtTokens tokens = authService.register(request);
         User user = userRepository.findByEmail("newuser@mail.com").orElseThrow();
 
         assertThat(user.getEmail()).isEqualTo("newuser@mail.com");
@@ -66,7 +65,7 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
         login.setEmail("login@mail.com");
         login.setPassword("secret");
 
-        JwtResponse tokens = authService.login(login);
+        JwtTokens tokens = authService.login(login);
         assertThat(tokens.getAccessToken()).isNotEmpty();
         assertThat(tokens.getRefreshToken()).isNotEmpty();
     }
@@ -97,7 +96,7 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
         LoginRequest login = new LoginRequest();
         login.setEmail("refresh@mail.com");
         login.setPassword("pass123");
-        JwtResponse tokens = authService.login(login);
+        JwtTokens tokens = authService.login(login);
 
         User user = userRepository.findByEmail("refresh@mail.com").orElseThrow();
 
@@ -107,10 +106,9 @@ class AuthFlowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void refreshToken_invalidToken_fails() {
-        RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken("invalid-token");
+        String invalidToken = "invalid-token";
 
-        assertThatThrownBy(() -> authService.refreshToken(request))
+        assertThatThrownBy(() -> authService.refreshToken(invalidToken))
                 .isInstanceOf(JWTVerificationException.class);
     }
 

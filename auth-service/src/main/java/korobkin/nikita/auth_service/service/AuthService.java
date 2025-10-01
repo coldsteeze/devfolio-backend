@@ -1,20 +1,19 @@
 package korobkin.nikita.auth_service.service;
 
+import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
-import korobkin.nikita.auth_service.dto.request.RefreshTokenRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
-import korobkin.nikita.auth_service.dto.response.JwtResponse;
 import korobkin.nikita.events.UserDeletedEvent;
 
 public interface AuthService {
 
-    JwtResponse register(RegisterRequest registerRequest);
+    JwtTokens register(RegisterRequest registerRequest);
 
-    JwtResponse login(LoginRequest loginRequest);
+    JwtTokens login(LoginRequest loginRequest);
 
-    JwtResponse refreshToken(RefreshTokenRequest refreshToken);
+    JwtTokens refreshToken(String refreshToken);
 
-    void logout(RefreshTokenRequest refreshToken);
+    void logout(String refreshToken);
 
     void deleteUser(UserDeletedEvent userDeletedEvent);
 }
