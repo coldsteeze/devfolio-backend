@@ -5,8 +5,8 @@ import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
-import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.events.UserDeletedEvent;
@@ -50,7 +50,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
         authService.register(request);
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(UserAlreadyExistsException.class)
+                .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("already exists");
     }
 
