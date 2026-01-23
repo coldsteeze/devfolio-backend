@@ -4,6 +4,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import korobkin.nikita.auth_service.config.AuthCookieProperties;
+import korobkin.nikita.auth_service.exception.ErrorCode;
+import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.service.CookieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -37,7 +39,8 @@ public class CookieServiceImpl implements CookieService {
                 }
             }
         }
-        throw new RuntimeException("Refresh token cookie not found");
+
+        throw new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID);
     }
 
     @Override

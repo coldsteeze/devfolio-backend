@@ -6,9 +6,7 @@ import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
-import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
-import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
-import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
+import korobkin.nikita.auth_service.exception.*;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
@@ -49,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
     public JwtTokens register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             log.warn("Registration failed: email {} is already taken", registerRequest.getEmail());
-            throw new UserAlreadyExistsException("User with this email already exists");
+            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_EXISTS);
         }
 
         User user = userMapper.toEntity(registerRequest);
@@ -99,10 +97,10 @@ public class AuthServiceImpl implements AuthService {
             return new JwtTokens(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
         } catch (BadCredentialsException e) {
             log.warn("Invalid login attempt for email: {}", loginRequest.getEmail());
-            throw new InvalidCredentialsException("Invalid email or password");
+            throw new InvalidCredentialsException(ErrorCode.INVALID_CREDENTIALS);
         } catch (Exception e) {
             log.error("Unexpected login error for email: {}", loginRequest.getEmail(), e);
-            throw new RuntimeException("Login failed", e);
+            throw new AuthenticationProcessingException(ErrorCode.INTERNAL_ERROR, e);
         }
     }
 
@@ -125,12 +123,12 @@ public class AuthServiceImpl implements AuthService {
         String email = jwtService.getEmailFromToken(refreshToken);
 
         userRepository.findById(userId)
-                .orElseThrow(() -> new InvalidRefreshTokenException("User not found"));
+                .orElseThrow(() -> new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID));
 
         String storedRefresh = tokenService.getRefreshToken(userId);
         if (storedRefresh == null || !storedRefresh.equals(refreshToken)) {
             log.warn("Invalid refresh token for userId={}, email={}", userId, email);
-            throw new InvalidRefreshTokenException("Invalid or expired refresh token");
+            throw new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID);
         }
 
         String access = jwtService.generateAccessToken(userId, email);
