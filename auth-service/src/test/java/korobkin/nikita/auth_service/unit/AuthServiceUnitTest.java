@@ -5,9 +5,9 @@ import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
-import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
@@ -120,7 +120,7 @@ public class AuthServiceUnitTest {
         given(userRepository.findByEmail("test@mail.com")).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(UserAlreadyExistsException.class)
+                .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("already exists");
     }
 
@@ -214,11 +214,11 @@ public class AuthServiceUnitTest {
     @Test
     void login_shouldThrowRunTimeException_whenLoginFailure() {
         given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willThrow(new RuntimeException("e"));
+                .willThrow(new BadCredentialsException("e"));
 
         assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Login failed");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid email or password");
     }
 
     @Test
@@ -246,7 +246,7 @@ public class AuthServiceUnitTest {
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired refresh token");
+                .hasMessageContaining("Invalid or expired token");
     }
 
     @Test
@@ -258,7 +258,7 @@ public class AuthServiceUnitTest {
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired refresh token");
+                .hasMessageContaining("Invalid or expired token");
     }
 
     @Test
@@ -284,7 +284,7 @@ public class AuthServiceUnitTest {
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("User not found");
+                .hasMessageContaining("Invalid or expired token");
     }
 
     @Test
