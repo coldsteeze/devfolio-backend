@@ -6,6 +6,7 @@ import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarR
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
+import korobkin.nikita.user_profile_service.exception.ErrorCode;
 import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.kafka.producer.UserEventProducer;
@@ -109,7 +110,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         UserProfile userProfile = findProfileById(id);
 
         if (userProfileRepository.existsByNicknameAndUserIdNot(request.getNickname(), id)) {
-            throw new NicknameAlreadyTakenException("Nickname already exists");
+            throw new NicknameAlreadyTakenException(ErrorCode.NICKNAME_ALREADY_EXISTS);
         }
 
         userProfileMapper.updateEntityFromDto(request, userProfile);
@@ -119,7 +120,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private UserProfile findProfileById(UUID id) {
         return userProfileRepository.findById(id)
-                .orElseThrow(() -> new UserProfileNotFoundException("User with this id not found"));
+                .orElseThrow(() -> new UserProfileNotFoundException(ErrorCode.PROFILE_NOT_FOUND));
     }
 }
 
