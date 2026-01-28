@@ -15,14 +15,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserProfileNotFoundException.class)
-    public ResponseEntity<ApiError> handleUserNotFound(UserProfileNotFoundException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex, request);
-    }
-
-    @ExceptionHandler(NicknameAlreadyTakenException.class)
-    public ResponseEntity<ApiError> handleNicknameAlreadyTaken(NicknameAlreadyTakenException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex, request);
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiError> handleAppException(AppException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex.getStatus(), ex, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
