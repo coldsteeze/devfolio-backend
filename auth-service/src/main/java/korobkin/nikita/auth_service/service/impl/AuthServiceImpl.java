@@ -1,7 +1,10 @@
 package korobkin.nikita.auth_service.service.impl;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.transaction.Transactional;
-import korobkin.nikita.auth_service.config.JwtProperties;
+import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
@@ -10,8 +13,8 @@ import korobkin.nikita.auth_service.exception.*;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
-import korobkin.nikita.auth_service.security.JwtService;
-import korobkin.nikita.auth_service.security.UserDetailsImpl;
+import korobkin.nikita.auth_service.security.jwt.JwtService;
+import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.events.UserCreatedEvent;
@@ -47,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
     public JwtTokens register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             log.warn("Registration failed: email {} is already taken", registerRequest.getEmail());
-            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_EXISTS);
+            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = userMapper.toEntity(registerRequest);
@@ -100,14 +103,22 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException(ErrorCode.INVALID_CREDENTIALS);
         } catch (Exception e) {
             log.error("Unexpected login error for email: {}", loginRequest.getEmail(), e);
-            throw new AuthenticationProcessingException(ErrorCode.INTERNAL_ERROR, e);
+            throw new AuthenticationProcessingException(ErrorCode.AUTH_INTERNAL_ERROR, e);
         }
     }
 
+    @Override
     public void logout(String refreshToken) {
-        UUID userId = jwtService.getUserIdFromToken(refreshToken);
-        tokenService.deleteRefreshToken(userId);
-        log.info("User logged out: userId={}", userId);
+        try {
+            DecodedJWT jwt = jwtService.verify(refreshToken);
+            if (jwtService.isRefreshToken(jwt)) {
+                UUID userId = jwtService.getUserIdFromVerifiedToken(jwt);
+                tokenService.deleteRefreshToken(userId);
+                log.info("User logged out: userId={}", userId);
+            }
+        } catch (JWTVerificationException e) {
+            log.warn("Logout attempt with invalid/expired token", e);
+        }
     }
 
     @Override
@@ -119,18 +130,53 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public JwtTokens refreshToken(String refreshToken) {
-        UUID userId = jwtService.getUserIdFromToken(refreshToken);
-        String email = jwtService.getEmailFromToken(refreshToken);
+        DecodedJWT jwt = validateRefreshTokenFormat(refreshToken);
 
-        userRepository.findById(userId)
-                .orElseThrow(() -> new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID));
+        UUID userId = jwtService.getUserIdFromVerifiedToken(jwt);
+        String email = jwtService.getEmailFromVerifiedToken(jwt);
 
-        String storedRefresh = tokenService.getRefreshToken(userId);
-        if (storedRefresh == null || !storedRefresh.equals(refreshToken)) {
-            log.warn("Invalid refresh token for userId={}, email={}", userId, email);
-            throw new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID);
+        getUserOrThrow(userId);
+
+        validateStoredRefreshToken(refreshToken, userId);
+
+        return generateAndSaveTokens(userId, email);
+    }
+
+    private DecodedJWT validateRefreshTokenFormat(String refreshToken) {
+        DecodedJWT jwt;
+
+        try {
+            jwt = jwtService.verify(refreshToken);
+        } catch (TokenExpiredException e) {
+            log.warn("Refresh token expired", e);
+            throw new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        } catch (JWTVerificationException e) {
+            log.warn("Invalid refresh token", e);
+            throw new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_INVALID);
         }
 
+        if (!jwtService.isRefreshToken(jwt)) {
+            log.warn("Token type is not refresh_token");
+            throw new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+
+        return jwt;
+    }
+
+    private void getUserOrThrow(UUID userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_INVALID));
+    }
+
+    private void validateStoredRefreshToken(String refreshToken, UUID userId) {
+        String storedRefresh = tokenService.getRefreshToken(userId);
+        if (storedRefresh == null || !storedRefresh.equals(refreshToken)) {
+            log.warn("Invalid refresh token for userId={}", userId);
+            throw new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+    }
+
+    private JwtTokens generateAndSaveTokens(UUID userId, String email) {
         String access = jwtService.generateAccessToken(userId, email);
         String newRefresh = jwtService.generateRefreshToken(userId, email);
 
