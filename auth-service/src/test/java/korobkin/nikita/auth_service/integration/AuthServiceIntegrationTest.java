@@ -1,12 +1,12 @@
 package korobkin.nikita.auth_service.integration;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
+import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.events.UserDeletedEvent;
@@ -109,7 +109,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
         String invalidToken = "invalid-token";
 
         assertThatThrownBy(() -> authService.refreshToken(invalidToken))
-                .isInstanceOf(JWTVerificationException.class);
+                .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
     @Test

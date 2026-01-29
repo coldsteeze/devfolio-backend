@@ -138,7 +138,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest{
                         .cookie(cookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message")
-                        .value("Invalid or expired token"));
+                        .value("Unauthorized"));
     }
 
     @Test
