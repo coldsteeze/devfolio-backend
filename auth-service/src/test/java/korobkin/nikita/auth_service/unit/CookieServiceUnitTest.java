@@ -82,7 +82,7 @@ public class CookieServiceUnitTest {
 
         assertThatThrownBy(() -> cookieService.extractRefreshTokenFromCookie(httpServletRequest))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired token");
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
@@ -92,7 +92,7 @@ public class CookieServiceUnitTest {
 
         assertThatThrownBy(() -> cookieService.extractRefreshTokenFromCookie(httpServletRequest))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired token");
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
