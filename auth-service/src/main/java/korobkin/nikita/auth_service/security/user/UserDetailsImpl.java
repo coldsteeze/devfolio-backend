@@ -1,4 +1,4 @@
-package korobkin.nikita.auth_service.security;
+package korobkin.nikita.auth_service.security.user;
 
 import korobkin.nikita.auth_service.entity.User;
 import lombok.Getter;
