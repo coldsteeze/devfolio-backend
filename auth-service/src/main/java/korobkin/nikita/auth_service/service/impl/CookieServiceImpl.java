@@ -40,7 +40,7 @@ public class CookieServiceImpl implements CookieService {
             }
         }
 
-        throw new InvalidRefreshTokenException(ErrorCode.TOKEN_INVALID);
+        throw new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_MISSING);
     }
 
     @Override
