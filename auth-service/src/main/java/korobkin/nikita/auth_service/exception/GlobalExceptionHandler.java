@@ -1,6 +1,5 @@
 package korobkin.nikita.auth_service.exception;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,12 +17,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiError> handleAppException(AppException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex.getStatus(), ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(JWTVerificationException.class)
-    public ResponseEntity<ApiError> handleJwtVerification(HttpServletRequest request) {
-        return buildErrorResponse(ErrorCode.TOKEN_INVALID.status, ErrorCode.TOKEN_INVALID.message, request);
+        return buildErrorResponse(ex.getStatus(), ex.getMessage(), ex.getErrorCode().name(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -34,20 +28,21 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + " " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR", request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error", ex);
-        return buildErrorResponse(ErrorCode.INTERNAL_ERROR.status, ErrorCode.INTERNAL_ERROR.message, request);
+        return buildErrorResponse(ErrorCode.AUTH_INTERNAL_ERROR.status, ErrorCode.AUTH_INTERNAL_ERROR.message, ErrorCode.AUTH_INTERNAL_ERROR.name(), request);
     }
 
-    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, String message, String code, HttpServletRequest request) {
         ApiError error = ApiError.builder()
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(message)
+                .code(code)
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
                 .build();

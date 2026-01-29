@@ -3,10 +3,16 @@ package korobkin.nikita.auth_service.exception;
 import org.springframework.http.HttpStatus;
 
 public enum ErrorCode {
-    EMAIL_EXISTS("Email already exists", HttpStatus.CONFLICT),
+
+    EMAIL_ALREADY_EXISTS("Email already exists", HttpStatus.CONFLICT),
+
     INVALID_CREDENTIALS("Invalid email or password", HttpStatus.UNAUTHORIZED),
-    TOKEN_INVALID("Invalid or expired token", HttpStatus.UNAUTHORIZED),
-    INTERNAL_ERROR("Unexpected server error", HttpStatus.INTERNAL_SERVER_ERROR);
+
+    REFRESH_TOKEN_INVALID("Unauthorized", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_EXPIRED("Unauthorized", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_MISSING("Unauthorized", HttpStatus.UNAUTHORIZED),
+
+    AUTH_INTERNAL_ERROR("Auth service internal error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     public final String message;
     public final HttpStatus status;
