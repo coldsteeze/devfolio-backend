@@ -35,6 +35,7 @@ public class JwtServiceImpl implements JwtService {
                 .build();
     }
 
+    @Override
     public String generateAccessToken(UUID userId, String email) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenExpirationMinutes()));
@@ -49,6 +50,7 @@ public class JwtServiceImpl implements JwtService {
                 .sign(getAlgorithm());
     }
 
+    @Override
     public String generateRefreshToken(UUID userId, String email) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofDays(jwtProperties.getRefreshTokenExpirationDays()));
@@ -63,24 +65,29 @@ public class JwtServiceImpl implements JwtService {
                 .sign(getAlgorithm());
     }
 
+    @Override
     public DecodedJWT verify(String token) throws JWTVerificationException {
         return getVerifier().verify(token);
     }
 
+    @Override
     public boolean isAccessToken(DecodedJWT jwt) throws JWTVerificationException {
         String type = jwt.getClaim("type").asString();
         return ACCESS_TOKEN_TYPE.equals(type);
     }
 
+    @Override
     public boolean isRefreshToken(DecodedJWT jwt) throws JWTVerificationException {
         String type = jwt.getClaim("type").asString();
         return REFRESH_TOKEN_TYPE.equals(type);
     }
 
+    @Override
     public String getEmailFromVerifiedToken(DecodedJWT jwt) {
         return jwt.getClaim("email").asString();
     }
 
+    @Override
     public UUID getUserIdFromVerifiedToken(DecodedJWT jwt) {
         return UUID.fromString(jwt.getSubject());
     }
