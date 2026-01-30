@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     EMAIL_ALREADY_EXISTS("Email already exists", HttpStatus.CONFLICT),
-
     INVALID_CREDENTIALS("Invalid email or password", HttpStatus.UNAUTHORIZED),
 
     REFRESH_TOKEN_INVALID("Unauthorized", HttpStatus.UNAUTHORIZED),
