@@ -1,4 +1,4 @@
-package korobkin.nikita.user_profile_service.security;
+package korobkin.nikita.user_profile_service.security.user;
 
 import java.util.UUID;
 

@@ -1,6 +1,6 @@
 package korobkin.nikita.user_profile_service.unit;
 
-import korobkin.nikita.user_profile_service.security.UserPrincipal;
+import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;

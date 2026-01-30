@@ -1,10 +1,11 @@
-package korobkin.nikita.user_profile_service.security;
+package korobkin.nikita.user_profile_service.security.jwt.impl;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import korobkin.nikita.user_profile_service.config.JwtProperties;
+import korobkin.nikita.user_profile_service.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
