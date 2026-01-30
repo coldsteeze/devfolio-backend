@@ -1,18 +1,20 @@
 package korobkin.nikita.auth_service.unit;
 
-import korobkin.nikita.auth_service.config.JwtProperties;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
-import korobkin.nikita.auth_service.exception.UserAlreadyExistsException;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
-import korobkin.nikita.auth_service.security.JwtService;
-import korobkin.nikita.auth_service.security.UserDetailsImpl;
+import korobkin.nikita.auth_service.security.jwt.impl.JwtServiceImpl;
+import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.auth_service.service.impl.AuthServiceImpl;
 import korobkin.nikita.events.UserCreatedEvent;
@@ -52,7 +54,7 @@ public class AuthServiceUnitTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtService jwtService;
+    private JwtServiceImpl jwtService;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -120,7 +122,7 @@ public class AuthServiceUnitTest {
         given(userRepository.findByEmail("test@mail.com")).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(UserAlreadyExistsException.class)
+                .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("already exists");
     }
 
@@ -214,17 +216,20 @@ public class AuthServiceUnitTest {
     @Test
     void login_shouldThrowRunTimeException_whenLoginFailure() {
         given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willThrow(new RuntimeException("e"));
+                .willThrow(new BadCredentialsException("e"));
 
         assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Login failed");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid email or password");
     }
 
     @Test
     void refreshToken_shouldReturnNewJwtTokens_whenTokenIsValid() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
-        given(jwtService.getEmailFromToken(any(String.class))).willReturn("test@mail.com");
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(any(String.class))).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(tokenService.getRefreshToken(userId)).willReturn("refresh");
         given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
@@ -239,32 +244,41 @@ public class AuthServiceUnitTest {
 
     @Test
     void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenIsInvalid() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
-        given(jwtService.getEmailFromToken(any(String.class))).willReturn("test@mail.com");
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(any(String.class))).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(any(DecodedJWT.class))).willReturn(userId);
+        given(jwtService.getEmailFromVerifiedToken(any(DecodedJWT.class))).willReturn("test@mail.com");
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(tokenService.getRefreshToken(userId)).willReturn(null);
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired refresh token");
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
     void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenDoesNotMatchStored() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
-        given(jwtService.getEmailFromToken(any(String.class))).willReturn("test@mail.com");
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(any(String.class))).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(tokenService.getRefreshToken(userId)).willReturn("correct refresh");
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Invalid or expired refresh token");
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
     void refreshToken_shouldSaveNewRefreshToken_inTokenService() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
-        given(jwtService.getEmailFromToken(any(String.class))).willReturn("test@mail.com");
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(any(String.class))).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(tokenService.getRefreshToken(userId)).willReturn("refresh");
         given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
@@ -278,29 +292,37 @@ public class AuthServiceUnitTest {
 
     @Test
     void refreshToken_shouldThrowInvalidRefreshToken_whenUserDoesNotExist() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
-        given(jwtService.getEmailFromToken(any(String.class))).willReturn("test@mail.com");
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(any(String.class))).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
         given(userRepository.findById(userId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refreshToken("refresh"))
                 .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("User not found");
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
     void refreshToken_shouldThrowException_whenJwtServiceFails() {
-        given(jwtService.getUserIdFromToken("badToken")).willThrow(new RuntimeException("JWT parse error"));
+        given(jwtService.verify(any(String.class)))
+                .willThrow(new JWTVerificationException("Unauthorized"));
 
         assertThatThrownBy(() -> authService.refreshToken("badToken"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("JWT parse error");
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("Unauthorized");
 
         verify(tokenService, never()).saveRefreshToken(any(), any(), anyLong());
     }
 
     @Test
     void logout_shouldDeleteRefreshToken_fromTokenService() {
-        given(jwtService.getUserIdFromToken(any(String.class))).willReturn(userId);
+        DecodedJWT jwt = mock(DecodedJWT.class);
+        given(jwtService.verify(anyString())).willReturn(jwt);
+        given(jwtService.isRefreshToken(jwt)).willReturn(true);
+        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+        doNothing().when(tokenService).deleteRefreshToken(userId);
 
         authService.logout("refresh");
 

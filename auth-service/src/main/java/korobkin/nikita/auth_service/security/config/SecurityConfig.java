@@ -1,5 +1,6 @@
-package korobkin.nikita.auth_service.security;
+package korobkin.nikita.auth_service.security.config;
 
+import korobkin.nikita.auth_service.security.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

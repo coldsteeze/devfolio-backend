@@ -6,7 +6,7 @@ import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarR
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
-import korobkin.nikita.user_profile_service.security.UserPrincipal;
+import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

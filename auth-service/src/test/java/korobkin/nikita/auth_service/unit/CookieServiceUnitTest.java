@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import korobkin.nikita.auth_service.config.AuthCookieProperties;
+import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.service.impl.CookieServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,8 +81,8 @@ public class CookieServiceUnitTest {
         given(httpServletRequest.getCookies()).willReturn(null);
 
         assertThatThrownBy(() -> cookieService.extractRefreshTokenFromCookie(httpServletRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Refresh token cookie not found");
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test
@@ -90,8 +91,8 @@ public class CookieServiceUnitTest {
         given(httpServletRequest.getCookies()).willReturn(new Cookie[]{realCookie});
 
         assertThatThrownBy(() -> cookieService.extractRefreshTokenFromCookie(httpServletRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Refresh token cookie not found");
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("Unauthorized");
     }
 
     @Test

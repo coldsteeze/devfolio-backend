@@ -15,14 +15,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserProfileNotFoundException.class)
-    public ResponseEntity<ApiError> handleUserNotFound(UserProfileNotFoundException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex, request);
-    }
-
-    @ExceptionHandler(NicknameAlreadyTakenException.class)
-    public ResponseEntity<ApiError> handleNicknameAlreadyTaken(NicknameAlreadyTakenException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex, request);
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiError> handleAppException(AppException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex.getStatus(), ex.getMessage(), ex.getErrorCode().name(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -33,14 +28,15 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + " " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, new RuntimeException(message), request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR", request);
     }
 
-    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, Exception ex, HttpServletRequest request) {
+    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, String message, String code, HttpServletRequest request) {
         ApiError error = ApiError.builder()
                 .status(status.value())
                 .error(status.getReasonPhrase())
-                .message(ex.getMessage())
+                .message(message)
+                .code(code)
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
                 .build();

@@ -1,6 +1,5 @@
 package korobkin.nikita.auth_service.exception;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,24 +15,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ApiError> handleUserExists(UserAlreadyExistsException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex, request);
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ApiError> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex, request);
-    }
-
-    @ExceptionHandler(InvalidRefreshTokenException.class)
-    public ResponseEntity<ApiError> handleInvalidRefresh(InvalidRefreshTokenException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex, request);
-    }
-
-    @ExceptionHandler(JWTVerificationException.class)
-    public ResponseEntity<ApiError> handleJwtVerification(JWTVerificationException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, new InvalidRefreshTokenException("Invalid or expired refresh token"), request);
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiError> handleAppException(AppException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex.getStatus(), ex.getMessage(), ex.getErrorCode().name(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -44,20 +28,21 @@ public class GlobalExceptionHandler {
                 .map(err -> err.getField() + " " + err.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, new RuntimeException(message), request);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, "VALIDATION_ERROR", request);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error", ex);
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex, request);
+        return buildErrorResponse(ErrorCode.AUTH_INTERNAL_ERROR.status, ErrorCode.AUTH_INTERNAL_ERROR.message, ErrorCode.AUTH_INTERNAL_ERROR.name(), request);
     }
 
-    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, Exception ex, HttpServletRequest request) {
+    private ResponseEntity<ApiError> buildErrorResponse(HttpStatus status, String message, String code, HttpServletRequest request) {
         ApiError error = ApiError.builder()
                 .status(status.value())
                 .error(status.getReasonPhrase())
-                .message(ex.getMessage())
+                .message(message)
+                .code(code)
                 .path(request.getRequestURI())
                 .timestamp(LocalDateTime.now())
                 .build();

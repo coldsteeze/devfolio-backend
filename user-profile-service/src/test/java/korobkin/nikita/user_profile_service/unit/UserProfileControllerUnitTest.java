@@ -6,7 +6,8 @@ import korobkin.nikita.user_profile_service.controller.UserProfileController;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
-import korobkin.nikita.user_profile_service.security.UserPrincipal;
+import korobkin.nikita.user_profile_service.security.jwt.JwtService;
+import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ public class UserProfileControllerUnitTest {
 
     @MockitoBean
     private UserProfileService userProfileService;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     @MockitoBean
     private JwtProperties jwtProperties;

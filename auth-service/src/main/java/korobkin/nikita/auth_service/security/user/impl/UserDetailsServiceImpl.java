@@ -1,7 +1,8 @@
-package korobkin.nikita.auth_service.security;
+package korobkin.nikita.auth_service.security.user.impl;
 
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.repository.UserRepository;
+import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

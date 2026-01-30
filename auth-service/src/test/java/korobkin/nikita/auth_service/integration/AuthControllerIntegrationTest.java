@@ -82,7 +82,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest{
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
-                        .value("User with this email already exists"));
+                        .value("Email already exists"));
     }
 
     @Test
@@ -138,7 +138,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest{
                         .cookie(cookie))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message")
-                        .value("Invalid or expired refresh token"));
+                        .value("Unauthorized"));
     }
 
     @Test

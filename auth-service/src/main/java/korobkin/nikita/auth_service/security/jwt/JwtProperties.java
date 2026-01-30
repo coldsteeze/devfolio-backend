@@ -1,4 +1,4 @@
-package korobkin.nikita.auth_service.config;
+package korobkin.nikita.auth_service.security.jwt;
 
 import lombok.Getter;
 import lombok.Setter;

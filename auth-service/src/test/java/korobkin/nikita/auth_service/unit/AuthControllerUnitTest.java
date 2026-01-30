@@ -7,8 +7,8 @@ import korobkin.nikita.auth_service.controller.AuthController;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
-import korobkin.nikita.auth_service.security.JwtService;
-import korobkin.nikita.auth_service.security.SecurityConfig;
+import korobkin.nikita.auth_service.security.jwt.impl.JwtServiceImpl;
+import korobkin.nikita.auth_service.security.config.SecurityConfig;
 import korobkin.nikita.auth_service.service.AuthService;
 import korobkin.nikita.auth_service.service.CookieService;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class AuthControllerUnitTest {
     private UserDetailsService userDetailsService;
 
     @MockitoBean
-    private JwtService jwtService;
+    private JwtServiceImpl jwtService;
 
     @MockitoBean
     private AuthService authService;

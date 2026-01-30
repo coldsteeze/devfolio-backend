@@ -34,11 +34,13 @@ public class TokenCacheServiceImpl implements TokenCacheService {
     public String getRefreshToken(UUID userId) {
         String key = REFRESH_PREFIX + userId;
         String token = redisTemplate.opsForValue().get(key);
+
         if (token == null) {
             log.warn("No refresh token found in Redis for userId={}", userId);
         } else {
             log.debug("Found refresh token in Redis for userId={}", userId);
         }
+
         return token;
     }
 
@@ -46,6 +48,7 @@ public class TokenCacheServiceImpl implements TokenCacheService {
     public void deleteRefreshToken(UUID userId) {
         String key = REFRESH_PREFIX + userId;
         Boolean result = redisTemplate.delete(key);
+
         if (result) {
             log.info("Deleted refresh token from Redis for userId={}", userId);
         } else {
