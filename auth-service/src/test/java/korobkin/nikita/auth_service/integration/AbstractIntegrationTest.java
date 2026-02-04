@@ -28,7 +28,7 @@ public abstract class AbstractIntegrationTest {
 
     @Container
     static KafkaContainer kafka = new KafkaContainer(
-            DockerImageName.parse("apache/kafka:3.7.0"));
+            DockerImageName.parse("apache/kafka:4.1.1"));
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {

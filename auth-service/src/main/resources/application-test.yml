@@ -18,6 +18,8 @@ spring:
     enabled: false
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:9092}
+    listener:
+      auto-startup: false
     consumer:
       group-id: user-profile-test
       auto-offset-reset: earliest
