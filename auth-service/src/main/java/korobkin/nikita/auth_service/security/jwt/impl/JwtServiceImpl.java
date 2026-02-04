@@ -56,6 +56,7 @@ public class JwtServiceImpl implements JwtService {
         Instant expiresAt = now.plus(Duration.ofDays(jwtProperties.getRefreshTokenExpirationDays()));
 
         return JWT.create()
+                .withJWTId(UUID.randomUUID().toString())
                 .withSubject(userId.toString())
                 .withClaim("email", email)
                 .withClaim("type", REFRESH_TOKEN_TYPE)
