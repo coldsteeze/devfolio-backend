@@ -1,21 +1,30 @@
 package korobkin.nikita.auth_service.integration;
 
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
-import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
+import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
+import korobkin.nikita.auth_service.fixtures.RefreshTokenFixtures;
+import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
+import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -28,98 +37,180 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @MockitoSpyBean
+    private UserEventProducer userEventProducer;
+
+    @BeforeEach
+    void cleanDb() {
+        userRepository.deleteAll();
+
+        redisTemplate.execute((RedisCallback<Void>) connection -> {
+            connection.serverCommands().flushDb();
+            return null;
+        });
+    }
+
     @Test
     void registerUser_success() {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("newuser@mail.com");
-        request.setPassword("pass123");
+        JwtTokens tokens = authService.register(AuthRequestFixtures.registerRequest());
 
-        JwtTokens tokens = authService.register(request);
-        User user = userRepository.findByEmail("newuser@mail.com").orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
 
-        assertThat(user.getEmail()).isEqualTo("newuser@mail.com");
+        assertThat(user.getEmail()).isEqualTo(AuthRequestFixtures.validEmail());
         assertThat(tokens.getAccessToken()).isNotEmpty();
         assertThat(tokens.getRefreshToken()).isNotEmpty();
     }
 
     @Test
     void registerUser_duplicateEmail_fails() {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("dup@mail.com");
-        request.setPassword("pass123");
-        authService.register(request);
+        authService.register(AuthRequestFixtures.registerRequest());
 
-        assertThatThrownBy(() -> authService.register(request))
+        assertThatThrownBy(() -> authService.register(AuthRequestFixtures.registerRequest()))
                 .isInstanceOf(EmailAlreadyExistsException.class)
-                .hasMessageContaining("already exists");
+                .hasMessageContaining("Email already exists");
+    }
+
+    @Test
+    void registerUser_passwordIsEncoded() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+
+        assertThat(passwordEncoder.matches(
+                AuthRequestFixtures.validPassword(),
+                user.getPassword()
+        )).isTrue();
+    }
+
+    @Test
+    void registerUser_refreshTokenStoredInRedis() {
+        JwtTokens tokens = authService.register(AuthRequestFixtures.registerRequest());
+
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+
+        String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
+        assertThat(stored).isEqualTo(tokens.getRefreshToken());
+    }
+
+    @Test
+    void register_userCreatedEventSent() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        verify(userEventProducer)
+                .sendUserCreated(any(UserCreatedEvent.class));
     }
 
     @Test
     void loginUser_success() {
-        RegisterRequest register = new RegisterRequest();
-        register.setEmail("login@mail.com");
-        register.setPassword("secret");
-        authService.register(register);
+        authService.register(AuthRequestFixtures.registerRequest());
 
-        LoginRequest login = new LoginRequest();
-        login.setEmail("login@mail.com");
-        login.setPassword("secret");
+        JwtTokens tokens = authService.login(AuthRequestFixtures.loginRequest());
 
-        JwtTokens tokens = authService.login(login);
         assertThat(tokens.getAccessToken()).isNotEmpty();
         assertThat(tokens.getRefreshToken()).isNotEmpty();
     }
 
     @Test
+    void login_success_overwritesRefreshToken() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        JwtTokens firstLogin = authService.login(AuthRequestFixtures.loginRequest());
+
+        JwtTokens secondLogin = authService.login(AuthRequestFixtures.loginRequest());
+
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
+
+        assertThat(firstLogin.getRefreshToken()).isNotEqualTo(secondLogin.getRefreshToken());
+        assertThat(stored).isEqualTo(secondLogin.getRefreshToken());
+    }
+
+    @Test
     void loginUser_invalidPassword_fails() {
-        RegisterRequest register = new RegisterRequest();
-        register.setEmail("wrongpass@mail.com");
-        register.setPassword("correct");
-        authService.register(register);
+        authService.register(AuthRequestFixtures.registerRequest());
 
-        LoginRequest login = new LoginRequest();
-        login.setEmail("wrongpass@mail.com");
-        login.setPassword("incorrect");
-
-        assertThatThrownBy(() -> authService.login(login))
+        assertThatThrownBy(() -> authService.login(AuthRequestFixtures.loginRequestWithInvalidCredentials()))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessageContaining("Invalid email or password");
     }
 
     @Test
-    void refreshToken_storedInRedis() {
-        RegisterRequest register = new RegisterRequest();
-        register.setEmail("refresh@mail.com");
-        register.setPassword("pass123");
-        authService.register(register);
+    void refreshToken_success_rotatesTokens() {
+        authService.register(AuthRequestFixtures.registerRequest());
 
-        LoginRequest login = new LoginRequest();
-        login.setEmail("refresh@mail.com");
-        login.setPassword("pass123");
-        JwtTokens tokens = authService.login(login);
+        JwtTokens loginTokens = authService.login(AuthRequestFixtures.loginRequest());
 
-        User user = userRepository.findByEmail("refresh@mail.com").orElseThrow();
+        JwtTokens refreshed = authService.refreshToken(loginTokens.getRefreshToken());
 
-        String storedRefresh = redisTemplate.opsForValue().get("refresh:" + user.getId());
-        assertThat(storedRefresh).isEqualTo(tokens.getRefreshToken());
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+
+        String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
+
+        assertThat(loginTokens.getRefreshToken()).isNotEqualTo(refreshed.getRefreshToken());
+        assertThat(refreshed.getRefreshToken()).isEqualTo(stored);
     }
 
     @Test
+    void refreshToken_oldTokenFails() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        JwtTokens oldTokens = authService.login(AuthRequestFixtures.loginRequest());
+
+        authService.login(AuthRequestFixtures.loginRequest());
+
+        assertThatThrownBy(() -> authService.refreshToken(oldTokens.getRefreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("Unauthorized");
+    }
+
+
+    @Test
     void refreshToken_invalidToken_fails() {
-        String invalidToken = "invalid-token";
+        String invalidToken = RefreshTokenFixtures.INVALID_TOKEN;
 
         assertThatThrownBy(() -> authService.refreshToken(invalidToken))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
     @Test
+    void refreshToken_deletedUser_fails() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        JwtTokens tokens = authService.login(AuthRequestFixtures.loginRequest());
+
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+
+        userRepository.delete(user);
+
+        assertThatThrownBy(() -> authService.refreshToken(tokens.getRefreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("Unauthorized");
+    }
+
+    @Test
+    void logout_removesRefreshToken() {
+        authService.register(AuthRequestFixtures.registerRequest());
+
+        JwtTokens removedTokens = authService.login(AuthRequestFixtures.loginRequest());
+
+        authService.logout(removedTokens.getRefreshToken());
+
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+
+        String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
+
+        assertThat(stored).isNullOrEmpty();
+    }
+
+    @Test
     void deleteUser_success() {
-        RegisterRequest register = new RegisterRequest();
-        register.setEmail("deleted@mail.ru");
-        register.setPassword("pass123");
+        RegisterRequest register = AuthRequestFixtures.registerRequest();
         authService.register(register);
 
-        User user = userRepository.findByEmail("deleted@mail.ru")
+        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail())
                 .orElseThrow(() -> new RuntimeException("User not found after registration"));
 
         assertThat(userRepository.findById(user.getId())).isPresent();
