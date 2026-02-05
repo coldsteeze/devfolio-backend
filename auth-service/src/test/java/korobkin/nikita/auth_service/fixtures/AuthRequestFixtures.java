@@ -44,4 +44,8 @@ public class AuthRequestFixtures {
     public static LoginRequest loginRequestWithInvalidCredentials() {
         return loginRequest(VALID_EMAIL, INVALID_PASSWORD);
     }
+
+    public static LoginRequest loginRequestWithEmptyEmail() {
+        return loginRequest(INVALID_EMAIL, VALID_PASSWORD);
+    }
 }
