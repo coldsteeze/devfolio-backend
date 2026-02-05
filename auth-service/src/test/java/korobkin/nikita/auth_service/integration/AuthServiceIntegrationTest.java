@@ -1,13 +1,12 @@
 package korobkin.nikita.auth_service.integration;
 
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
-import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
-import korobkin.nikita.auth_service.fixtures.RefreshTokenFixtures;
+import korobkin.nikita.auth_service.fixtures.JwtTokenFixtures;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
@@ -57,9 +56,9 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     void registerUser_success() {
         JwtTokens tokens = authService.register(AuthRequestFixtures.registerRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
-        assertThat(user.getEmail()).isEqualTo(AuthRequestFixtures.validEmail());
+        assertThat(user.getEmail()).isEqualTo(AuthRequestFixtures.VALID_EMAIL);
         assertThat(tokens.getAccessToken()).isNotEmpty();
         assertThat(tokens.getRefreshToken()).isNotEmpty();
     }
@@ -77,10 +76,10 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     void registerUser_passwordIsEncoded() {
         authService.register(AuthRequestFixtures.registerRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
         assertThat(passwordEncoder.matches(
-                AuthRequestFixtures.validPassword(),
+                AuthRequestFixtures.VALID_PASSWORD,
                 user.getPassword()
         )).isTrue();
     }
@@ -89,7 +88,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     void registerUser_refreshTokenStoredInRedis() {
         JwtTokens tokens = authService.register(AuthRequestFixtures.registerRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
         String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
         assertThat(stored).isEqualTo(tokens.getRefreshToken());
@@ -121,7 +120,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         JwtTokens secondLogin = authService.login(AuthRequestFixtures.loginRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
         String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
 
         assertThat(firstLogin.getRefreshToken()).isNotEqualTo(secondLogin.getRefreshToken());
@@ -129,7 +128,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginUser_invalidPassword_fails() {
+    void loginUser_invalidCredentials_fails() {
         authService.register(AuthRequestFixtures.registerRequest());
 
         assertThatThrownBy(() -> authService.login(AuthRequestFixtures.loginRequestWithInvalidCredentials()))
@@ -145,7 +144,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         JwtTokens refreshed = authService.refreshToken(loginTokens.getRefreshToken());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
         String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
 
@@ -169,9 +168,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void refreshToken_invalidToken_fails() {
-        String invalidToken = RefreshTokenFixtures.INVALID_TOKEN;
-
-        assertThatThrownBy(() -> authService.refreshToken(invalidToken))
+        assertThatThrownBy(() -> authService.refreshToken(JwtTokenFixtures.INVALID_TOKEN))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
@@ -181,7 +178,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         JwtTokens tokens = authService.login(AuthRequestFixtures.loginRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
         userRepository.delete(user);
 
@@ -198,7 +195,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         authService.logout(removedTokens.getRefreshToken());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail()).orElseThrow();
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL).orElseThrow();
 
         String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
 
@@ -207,10 +204,9 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void deleteUser_success() {
-        RegisterRequest register = AuthRequestFixtures.registerRequest();
-        authService.register(register);
+        authService.register(AuthRequestFixtures.registerRequest());
 
-        User user = userRepository.findByEmail(AuthRequestFixtures.validEmail())
+        User user = userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL)
                 .orElseThrow(() -> new RuntimeException("User not found after registration"));
 
         assertThat(userRepository.findById(user.getId())).isPresent();
