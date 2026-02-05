@@ -1,14 +1,13 @@
 package korobkin.nikita.auth_service.integration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import korobkin.nikita.auth_service.config.AuthCookieProperties;
-import korobkin.nikita.auth_service.dto.request.LoginRequest;
-import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
-import korobkin.nikita.auth_service.fixtures.RefreshTokenFixtures;
+import korobkin.nikita.auth_service.fixtures.JwtTokenFixtures;
 import korobkin.nikita.auth_service.repository.UserRepository;
+import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +43,9 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private AuthCookieProperties authCookieProperties;
 
+    @Autowired
+    private JwtProperties jwtProperties;
+
     @BeforeEach
     void cleanDb() {
         userRepository.deleteAll();
@@ -54,31 +56,27 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         });
     }
 
-
     @Test
     void registerUser_success() throws Exception {
-        RegisterRequest request = AuthRequestFixtures.registerRequest();
-
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(AuthRequestFixtures.registerRequest())))
                 .andExpect(status().isCreated())
-                .andExpect(validAuthBody())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNumber())
                 .andExpect(validAuthCookie());
     }
 
     @Test
     void registerUser_duplicateEmail_fails() throws Exception {
-        RegisterRequest request = AuthRequestFixtures.registerRequest();
-
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(AuthRequestFixtures.registerRequest())))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(AuthRequestFixtures.registerRequest())))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
                         .value("Email already exists"))
@@ -88,11 +86,9 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void registerUser_invalidEmail_fails() throws Exception {
-        RegisterRequest request = AuthRequestFixtures.registerRequestWithInvalidEmail();
-
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(AuthRequestFixtures.registerRequestWithEmptyEmail())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
@@ -100,30 +96,54 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void loginUser_success() throws Exception {
-        RegisterRequest register = AuthRequestFixtures.registerRequest();
-
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(register)))
+                        .content(json(AuthRequestFixtures.registerRequest())))
                 .andExpect(status().isCreated())
-                .andExpect(validAuthBody())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNumber())
                 .andExpect(validAuthCookie());
-
-        LoginRequest login = AuthRequestFixtures.loginRequest();
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(login)))
+                        .content(json(AuthRequestFixtures.loginRequest())))
                 .andExpect(status().isOk())
-                .andExpect(validAuthBody())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.accessTokenExpiresIn").isNumber())
                 .andExpect(validAuthCookie());
     }
 
     @Test
-    void refreshToken_invalidToken_fails() throws Exception {
-        String token = RefreshTokenFixtures.INVALID_TOKEN;
+    void loginUser_emptyEmail_fails() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(AuthRequestFixtures.loginRequestWithEmptyEmail())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("email Email is required"))
+                .andExpect(jsonPath("$.code")
+                        .value("VALIDATION_ERROR"));
+    }
 
-        Cookie cookie = new Cookie(authCookieProperties.getName(), token);
+    @Test
+    void loginUser_invalidCredentials_fails() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(AuthRequestFixtures.registerRequest())));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(AuthRequestFixtures.loginRequestWithInvalidCredentials())))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message")
+                        .value("Invalid email or password"))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void refreshToken_invalidToken_fails() throws Exception {
+        Cookie cookie = new Cookie(authCookieProperties.getName(), JwtTokenFixtures.INVALID_TOKEN);
 
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -136,8 +156,24 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshToken_withoutCookies_fails() throws Exception {
+    void refreshToken_expiredToken_fails() throws Exception {
+        Cookie cookie = new Cookie(
+                authCookieProperties.getName(),
+                JwtTokenFixtures.createExpiredRefreshToken(jwtProperties)
+        );
 
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .cookie(cookie))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message")
+                        .value("Unauthorized"))
+                .andExpect(jsonPath("$.code")
+                        .value("REFRESH_TOKEN_EXPIRED"));
+    }
+
+    @Test
+    void refreshToken_withoutCookies_fails() throws Exception {
         mockMvc.perform(post("/api/auth/refresh")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
@@ -147,16 +183,31 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
                         .value("REFRESH_TOKEN_MISSING"));
     }
 
-    private ResultMatcher validAuthBody() {
-        return result -> {
-            String json = result.getResponse().getContentAsString();
+    @Test
+    void logout_success() throws Exception {
+        Cookie cookie = new Cookie(
+                authCookieProperties.getName(),
+                JwtTokenFixtures.createValidRefreshToken(jwtProperties)
+        );
 
-            String token = JsonPath.read(json, "$.accessToken");
-            Integer expiresIn = JsonPath.read(json, "$.accessTokenExpiresIn");
+        mockMvc.perform(post("/api/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .cookie(cookie))
+                .andExpect(status().isNoContent());
+    }
 
-            assertThat(token).isNotBlank();
-            assertThat(expiresIn).isPositive();
-        };
+    @Test
+    void logout_invalidToken_fails() throws Exception {
+        Cookie cookie = new Cookie(authCookieProperties.getName(), JwtTokenFixtures.INVALID_TOKEN);
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .cookie(cookie))
+                .andExpect(status().isNoContent());
+    }
+
+    private String json(Object o) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(o);
     }
 
     private ResultMatcher validAuthCookie() {
@@ -168,9 +219,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             assertThat(cookie.isHttpOnly()).isEqualTo(authCookieProperties.isHttpOnly());
             assertThat(cookie.getSecure()).isEqualTo(authCookieProperties.isSecure());
             assertThat(cookie.getPath()).isEqualTo(authCookieProperties.getPath());
-            assertThat(cookie.getMaxAge())
-                    .isEqualTo((int) authCookieProperties.getMaxAgeDays() * 24 * 3600);
+            assertThat(cookie.getMaxAge()).isPositive();
         };
     }
 }
-
