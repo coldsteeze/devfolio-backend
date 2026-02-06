@@ -129,6 +129,7 @@ public class AuthServiceImpl implements AuthService {
         tokenService.deleteRefreshToken(userDeletedEvent.userId());
     }
 
+    @Override
     public JwtTokens refreshToken(String refreshToken) {
         DecodedJWT jwt = validateRefreshTokenFormat(refreshToken);
 

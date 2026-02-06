@@ -2,7 +2,6 @@ package korobkin.nikita.auth_service.unit;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
@@ -10,16 +9,22 @@ import korobkin.nikita.auth_service.entity.User;
 import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
+import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
+import korobkin.nikita.auth_service.fixtures.JwtTokenFixtures;
+import korobkin.nikita.auth_service.fixtures.UserFixtures;
 import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
-import korobkin.nikita.auth_service.security.jwt.impl.JwtServiceImpl;
+import korobkin.nikita.auth_service.security.jwt.JwtProperties;
+import korobkin.nikita.auth_service.security.jwt.JwtService;
 import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.auth_service.service.impl.AuthServiceImpl;
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +47,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("AuthService unit tests")
 public class AuthServiceUnitTest {
 
     @Mock
@@ -54,7 +60,7 @@ public class AuthServiceUnitTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JwtServiceImpl jwtService;
+    private JwtService jwtService;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -81,274 +87,325 @@ public class AuthServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        registerRequest = new RegisterRequest();
-        registerRequest.setEmail("test@mail.com");
-        registerRequest.setPassword("password");
+        registerRequest = AuthRequestFixtures.registerRequest();
 
-        user = new User();
-        user.setEmail("test@mail.com");
-        user.setPassword("password");
+        user = UserFixtures.defaultUser();
 
-        userId = UUID.randomUUID();
-        savedUser = new User();
-        savedUser.setId(userId);
-        savedUser.setEmail("test@mail.com");
-        savedUser.setPassword("encodedPassword");
+        savedUser = UserFixtures.savedUser();
+        userId = savedUser.getId();
 
-        loginRequest = new LoginRequest();
-        loginRequest.setEmail("test@mail.com");
-        loginRequest.setPassword("password");
+        loginRequest = AuthRequestFixtures.loginRequest();
 
         UserDetailsImpl userDetailsImpl = new UserDetailsImpl(savedUser);
         authentication = new UsernamePasswordAuthenticationToken(userDetailsImpl, loginRequest.getPassword());
     }
 
-    @Test
-    void register_shouldReturnJwtTokens_whenNewUser() {
-        mockSuccessfulRegistration();
-        doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString(), anyLong());
+    @Nested
+    @DisplayName("User registration")
+    class Register {
 
-        JwtTokens tokens = authService.register(registerRequest);
+        @Test
+        @DisplayName("Should return JWT tokens when user is successfully registered")
+        void register_shouldReturnJwtTokens_whenNewUser() {
+            mockSuccessfulRegistration();
+            doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString(), anyLong());
 
-        assertThat(user.getLoggedAt()).isNotNull();
-        assertThat(tokens.getAccessToken()).isEqualTo("access");
-        assertThat(tokens.getRefreshToken()).isEqualTo("refresh");
-        assertThat(tokens.getAccessTokenExpiresIn()).isEqualTo(15L);
+            JwtTokens tokens = authService.register(registerRequest);
+
+            assertThat(user.getLoggedAt()).isNotNull();
+            assertThat(tokens.getAccessToken()).isEqualTo(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+            assertThat(tokens.getRefreshToken()).isEqualTo(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            assertThat(tokens.getAccessTokenExpiresIn()).isEqualTo(JwtTokenFixtures.DEFAULT_EXPIRES_IN);
+        }
+
+        @Test
+        @DisplayName("Should throw exception when email already exists")
+        void register_shouldThrowException_whenEmailAlreadyExists() {
+            given(userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> authService.register(registerRequest))
+                    .isInstanceOf(EmailAlreadyExistsException.class)
+                    .hasMessageContaining("Email already exists");
+        }
+
+        @Test
+        @DisplayName("Should encode password before saving user")
+        void register_shouldEncodePassword_beforeSavingUser() {
+            given(userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL)).willReturn(Optional.empty());
+            given(userMapper.toEntity(registerRequest)).willReturn(user);
+            given(passwordEncoder.encode(AuthRequestFixtures.VALID_PASSWORD))
+                    .willReturn(UserFixtures.ENCODED_PASSWORD);
+
+            authService.register(registerRequest);
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+
+            assertThat(captor.getValue().getPassword())
+                    .isEqualTo(UserFixtures.ENCODED_PASSWORD);
+        }
+
+        @Test
+        @DisplayName("Should save refresh token in token service")
+        void register_shouldSaveRefreshToken_inTokenService() {
+            given(userRepository.findByEmail(AuthRequestFixtures.VALID_EMAIL)).willReturn(Optional.empty());
+            given(userMapper.toEntity(registerRequest)).willReturn(user);
+            given(passwordEncoder.encode(AuthRequestFixtures.VALID_PASSWORD))
+                    .willReturn(UserFixtures.ENCODED_PASSWORD);
+            given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+                User u = invocation.getArgument(0);
+                u.setId(userId);
+                return u;
+            });
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+            given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
+
+            authService.register(registerRequest);
+
+            assertThat(user.getLoggedAt()).isNotNull();
+            verify(tokenService).saveRefreshToken(userId, JwtTokenFixtures.DEFAULT_REFRESH_TOKEN, 7L);
+        }
+
+        @Test
+        @DisplayName("Should publish user created event after successful registration")
+        void register_shouldSendUserCreatedEvent_afterSuccessfulRegistration() {
+            mockSuccessfulRegistration();
+
+            authService.register(registerRequest);
+
+            ArgumentCaptor<UserCreatedEvent> captor = ArgumentCaptor.forClass(UserCreatedEvent.class);
+            verify(userEventProducer).sendUserCreated(captor.capture());
+            assertThat(captor.getValue().userId()).isEqualTo(userId);
+        }
     }
 
+    @Nested
+    @DisplayName("User authentication")
+    class Login {
 
-    @Test
-    void register_shouldThrowException_whenEmailAlreadyExists() {
-        given(userRepository.findByEmail("test@mail.com")).willReturn(Optional.of(user));
+        @Test
+        @DisplayName("Should return JWT tokens when credentials are valid")
+        void login_shouldReturnJwtTokens_whenCredentialsAreValid() {
+            given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .willReturn(authentication);
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+            given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            given(jwtProperties.getAccessTokenExpirationMinutes()).willReturn(JwtTokenFixtures.DEFAULT_EXPIRES_IN);
+            given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
 
-        assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(EmailAlreadyExistsException.class)
-                .hasMessageContaining("already exists");
+            JwtTokens tokens = authService.login(loginRequest);
+
+            assertThat(savedUser.getLoggedAt()).isNotNull();
+            assertThat(tokens.getAccessToken()).isEqualTo(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+            assertThat(tokens.getRefreshToken()).isEqualTo(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            assertThat(tokens.getAccessTokenExpiresIn()).isEqualTo(JwtTokenFixtures.DEFAULT_EXPIRES_IN);
+        }
+
+        @Test
+        @DisplayName("Should throw InvalidCredentialsException when password is incorrect")
+        void login_shouldThrowInvalidCredentialsException_whenPasswordIsWrong() {
+            given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .willThrow(new BadCredentialsException("e"));
+
+            assertThatThrownBy(() -> authService.login(loginRequest))
+                    .isInstanceOf(InvalidCredentialsException.class)
+                    .hasMessageContaining("Invalid email or password");
+        }
+
+        @Test
+        @DisplayName("Should save refresh token when login is successful")
+        void login_shouldSaveRefreshToken_whenLoginSuccess() {
+            given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                    .willReturn(authentication);
+
+            given(jwtService.generateAccessToken(eq(savedUser.getId()), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+            given(jwtService.generateRefreshToken(eq(savedUser.getId()), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
+
+            authService.login(loginRequest);
+
+            verify(tokenService).saveRefreshToken(eq(savedUser.getId()), eq(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN), eq(7L));
+            assertThat(savedUser.getLoggedAt()).isNotNull();
+        }
     }
 
-    @Test
-    void register_shouldEncodePassword_beforeSavingUser() {
-        given(userRepository.findByEmail("test@mail.com")).willReturn(Optional.empty());
-        given(userMapper.toEntity(registerRequest)).willReturn(user);
-        given(userRepository.save(any(User.class))).willReturn(savedUser);
+    @Nested
+    @DisplayName("Refresh token processing")
+    class RefreshToken {
 
-        authService.register(registerRequest);
+        @Test
+        @DisplayName("Should return new JWT tokens when refresh token is valid")
+        void refreshToken_shouldReturnNewJwtTokens_whenTokenIsValid() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(any(String.class))).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+            given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(tokenService.getRefreshToken(userId)).willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.NEW_ACCESS_TOKEN);
+            given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.NEW_REFRESH_TOKEN);
+            given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
 
+            JwtTokens tokens = authService.refreshToken(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            verify(tokenService).saveRefreshToken(userId, JwtTokenFixtures.NEW_REFRESH_TOKEN, 7L);
+            assertThat(tokens.getAccessToken()).isEqualTo(JwtTokenFixtures.NEW_ACCESS_TOKEN);
+            assertThat(tokens.getRefreshToken()).isEqualTo(JwtTokenFixtures.NEW_REFRESH_TOKEN);
+        }
 
-        assertThat(user.getLoggedAt()).isNotNull();
-        verify(passwordEncoder).encode("password");
-        assertThat(savedUser.getPassword()).isEqualTo("encodedPassword");
+        @Test
+        @DisplayName("Should throw exception when refresh token is missing in cache")
+        void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenIsInvalid() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(any(String.class))).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(any(DecodedJWT.class))).willReturn(userId);
+            given(jwtService.getEmailFromVerifiedToken(any(DecodedJWT.class)))
+                    .willReturn(AuthRequestFixtures.VALID_EMAIL);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(tokenService.getRefreshToken(userId)).willReturn(null);
+
+            assertThatThrownBy(() -> authService.refreshToken(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN))
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Unauthorized");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when refresh token does not match stored token")
+        void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenDoesNotMatchStored() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(any(String.class))).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+            given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(tokenService.getRefreshToken(userId)).willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+
+            assertThatThrownBy(() -> authService.refreshToken(JwtTokenFixtures.INVALID_TOKEN))
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Unauthorized");
+        }
+
+        @Test
+        @DisplayName("Should save new refresh token after successful refresh")
+        void refreshToken_shouldSaveNewRefreshToken_inTokenService() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(any(String.class))).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+            given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(tokenService.getRefreshToken(userId)).willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.NEW_ACCESS_TOKEN);
+            given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                    .willReturn(JwtTokenFixtures.NEW_REFRESH_TOKEN);
+            given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
+
+            authService.refreshToken(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+
+            verify(tokenService).saveRefreshToken(userId, JwtTokenFixtures.NEW_REFRESH_TOKEN, 7L);
+        }
+
+        @Test
+        @DisplayName("Should throw exception when user does not exist")
+        void refreshToken_shouldThrowInvalidRefreshToken_whenUserDoesNotExist() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(any(String.class))).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+            given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
+            given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.refreshToken(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN))
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Unauthorized");
+        }
+
+        @Test
+        @DisplayName("Should throw exception when JWT verification fails")
+        void refreshToken_shouldThrowException_whenJwtServiceFails() {
+            given(jwtService.verify(any(String.class)))
+                    .willThrow(new JWTVerificationException("Unauthorized"));
+
+            assertThatThrownBy(() -> authService.refreshToken(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN))
+                    .isInstanceOf(InvalidRefreshTokenException.class)
+                    .hasMessageContaining("Unauthorized");
+
+            verify(tokenService, never()).saveRefreshToken(any(), any(), anyLong());
+        }
     }
 
-    @Test
-    void register_shouldSaveRefreshToken_inTokenService() {
-        given(userRepository.findByEmail("test@mail.com")).willReturn(Optional.empty());
-        given(userMapper.toEntity(registerRequest)).willReturn(user);
-        given(passwordEncoder.encode("password")).willReturn("encodedPassword");
-        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
-            User u = invocation.getArgument(0);
-            u.setId(userId);
-            return u;
-        });
-        given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(any(UUID.class), eq("test@mail.com"))).willReturn("refresh");
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
+    @Nested
+    @DisplayName("User logout")
+    class Logout {
 
-        authService.register(registerRequest);
+        @Test
+        @DisplayName("Should delete refresh token from token service")
+        void logout_shouldDeleteRefreshToken_fromTokenService() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(anyString())).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(true);
+            given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
+            doNothing().when(tokenService).deleteRefreshToken(userId);
 
-        assertThat(user.getLoggedAt()).isNotNull();
-        verify(tokenService).saveRefreshToken(userId, "refresh", 7L);
+            authService.logout(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+
+            verify(tokenService).deleteRefreshToken(userId);
+        }
+
+        @Test
+        @DisplayName("Should do nothing when token is not refresh")
+        void logout_shouldDoNothing_whenTokenIsNotRefreshToken() {
+            DecodedJWT jwt = mock(DecodedJWT.class);
+            given(jwtService.verify(anyString())).willReturn(jwt);
+            given(jwtService.isRefreshToken(jwt)).willReturn(false);
+
+            authService.logout(JwtTokenFixtures.INVALID_TOKEN);
+
+            verify(jwtService).verify(JwtTokenFixtures.INVALID_TOKEN);
+            verify(jwtService).isRefreshToken(jwt);
+            verify(tokenService, never()).deleteRefreshToken(any(UUID.class));
+        }
     }
 
-    @Test
-    void register_shouldSendUserCreatedEvent_afterSuccessfulRegistration() {
-        mockSuccessfulRegistration();
+    @Nested
+    @DisplayName("User deletion event handling")
+    class DeleteUser {
 
-        authService.register(registerRequest);
+        @Test
+        @DisplayName("Should delete user and refresh token when UserDeletedEvent is received")
+        void deleteUser_shouldDeleteUser_andRefreshToken_whenUserExists() {
+            authService.deleteUser(new UserDeletedEvent(userId));
 
-        ArgumentCaptor<UserCreatedEvent> captor = ArgumentCaptor.forClass(UserCreatedEvent.class);
-        verify(userEventProducer).sendUserCreated(captor.capture());
-        assertThat(captor.getValue().userId()).isEqualTo(userId);
-    }
-
-    @Test
-    void login_shouldReturnJwtTokens_whenCredentialsAreValid() {
-        given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willReturn(authentication);
-        given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(any(UUID.class), eq("test@mail.com"))).willReturn("refresh");
-        given(jwtProperties.getAccessTokenExpirationMinutes()).willReturn(15L);
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
-
-        JwtTokens tokens = authService.login(loginRequest);
-
-        assertThat(savedUser.getLoggedAt()).isNotNull();
-        assertThat(tokens.getAccessToken()).isEqualTo("access");
-        assertThat(tokens.getRefreshToken()).isEqualTo("refresh");
-        assertThat(tokens.getAccessTokenExpiresIn()).isEqualTo(15L);
-    }
-
-    @Test
-    void login_shouldThrowInvalidCredentialsException_whenPasswordIsWrong() {
-        given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willThrow(new BadCredentialsException("e"));
-
-        assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessageContaining("Invalid email or password");
-    }
-
-    @Test
-    void login_shouldSaveRefreshToken_whenLoginSuccess() {
-        given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willReturn(authentication);
-
-        given(jwtService.generateAccessToken(eq(savedUser.getId()), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(eq(savedUser.getId()), eq("test@mail.com"))).willReturn("refresh");
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
-
-        authService.login(loginRequest);
-
-        verify(tokenService).saveRefreshToken(eq(savedUser.getId()), eq("refresh"), eq(7L));
-        assertThat(savedUser.getLoggedAt()).isNotNull();
-    }
-
-    @Test
-    void login_shouldThrowRunTimeException_whenLoginFailure() {
-        given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .willThrow(new BadCredentialsException("e"));
-
-        assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessageContaining("Invalid email or password");
-    }
-
-    @Test
-    void refreshToken_shouldReturnNewJwtTokens_whenTokenIsValid() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(any(String.class))).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
-        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.getRefreshToken(userId)).willReturn("refresh");
-        given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(any(UUID.class), eq("test@mail.com"))).willReturn("new refresh");
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
-
-        JwtTokens tokens = authService.refreshToken("refresh");
-        verify(tokenService).saveRefreshToken(userId, "new refresh", 7L);
-        assertThat(tokens.getAccessToken()).isEqualTo("access");
-        assertThat(tokens.getRefreshToken()).isEqualTo("new refresh");
-    }
-
-    @Test
-    void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenIsInvalid() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(any(String.class))).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(any(DecodedJWT.class))).willReturn(userId);
-        given(jwtService.getEmailFromVerifiedToken(any(DecodedJWT.class))).willReturn("test@mail.com");
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.getRefreshToken(userId)).willReturn(null);
-
-        assertThatThrownBy(() -> authService.refreshToken("refresh"))
-                .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Unauthorized");
-    }
-
-    @Test
-    void refreshToken_shouldThrowInvalidRefreshTokenException_whenTokenDoesNotMatchStored() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(any(String.class))).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
-        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.getRefreshToken(userId)).willReturn("correct refresh");
-
-        assertThatThrownBy(() -> authService.refreshToken("refresh"))
-                .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Unauthorized");
-    }
-
-    @Test
-    void refreshToken_shouldSaveNewRefreshToken_inTokenService() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(any(String.class))).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
-        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.getRefreshToken(userId)).willReturn("refresh");
-        given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(any(UUID.class), eq("test@mail.com"))).willReturn("new refresh");
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
-
-        authService.refreshToken("refresh");
-
-        verify(tokenService).saveRefreshToken(userId, "new refresh", 7L);
-    }
-
-    @Test
-    void refreshToken_shouldThrowInvalidRefreshToken_whenUserDoesNotExist() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(any(String.class))).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
-        given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn("test@mail.com");
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.refreshToken("refresh"))
-                .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Unauthorized");
-    }
-
-    @Test
-    void refreshToken_shouldThrowException_whenJwtServiceFails() {
-        given(jwtService.verify(any(String.class)))
-                .willThrow(new JWTVerificationException("Unauthorized"));
-
-        assertThatThrownBy(() -> authService.refreshToken("badToken"))
-                .isInstanceOf(InvalidRefreshTokenException.class)
-                .hasMessageContaining("Unauthorized");
-
-        verify(tokenService, never()).saveRefreshToken(any(), any(), anyLong());
-    }
-
-    @Test
-    void logout_shouldDeleteRefreshToken_fromTokenService() {
-        DecodedJWT jwt = mock(DecodedJWT.class);
-        given(jwtService.verify(anyString())).willReturn(jwt);
-        given(jwtService.isRefreshToken(jwt)).willReturn(true);
-        given(jwtService.getUserIdFromVerifiedToken(jwt)).willReturn(userId);
-        doNothing().when(tokenService).deleteRefreshToken(userId);
-
-        authService.logout("refresh");
-
-        verify(tokenService).deleteRefreshToken(userId);
-    }
-
-    @Test
-    void deleteUser_shouldDeleteUser_andRefreshToken_whenUserExists() {
-        authService.deleteUser(new UserDeletedEvent(userId));
-
-        verify(userRepository).deleteById(userId);
-        verify(tokenService).deleteRefreshToken(userId);
+            verify(userRepository).deleteById(userId);
+            verify(tokenService).deleteRefreshToken(userId);
+        }
     }
 
     private void mockSuccessfulRegistration() {
         given(userRepository.findByEmail(anyString())).willReturn(Optional.empty());
         given(userMapper.toEntity(any(RegisterRequest.class))).willReturn(user);
-        given(passwordEncoder.encode(anyString())).willReturn("encodedPassword");
+        given(passwordEncoder.encode(anyString())).willReturn(UserFixtures.ENCODED_PASSWORD);
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User u = invocation.getArgument(0);
             u.setId(userId);
             return u;
         });
-        given(jwtService.generateAccessToken(any(UUID.class), eq("test@mail.com"))).willReturn("access");
-        given(jwtService.generateRefreshToken(any(UUID.class), eq("test@mail.com"))).willReturn("refresh");
-        given(jwtProperties.getAccessTokenExpirationMinutes()).willReturn(15L);
-        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(7L);
+        given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
+        given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+                .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
+        given(jwtProperties.getAccessTokenExpirationMinutes()).willReturn(JwtTokenFixtures.DEFAULT_EXPIRES_IN);
+        given(jwtProperties.getRefreshTokenExpirationDays()).willReturn(1L);
     }
 }
