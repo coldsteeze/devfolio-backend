@@ -16,14 +16,21 @@ public class JwtTokenFixtures {
 
     public static final String DEFAULT_ACCESS_TOKEN = "access";
     public static final String DEFAULT_REFRESH_TOKEN = "refresh";
-    public static final int DEFAULT_EXPIRES_IN = 15;
+    public static final long DEFAULT_EXPIRES_IN = 15;
 
-    public static JwtTokens jwtTokens(String access, String refresh, int expires) {
+    public static final String NEW_ACCESS_TOKEN = "new-access-token";
+    public static final String NEW_REFRESH_TOKEN = "refresh";
+
+    public static JwtTokens jwtTokens(String access, String refresh, long expires) {
         return new JwtTokens(access, refresh, expires);
     }
 
     public static JwtTokens jwtTokens() {
         return jwtTokens(DEFAULT_ACCESS_TOKEN, DEFAULT_REFRESH_TOKEN, DEFAULT_EXPIRES_IN);
+    }
+
+    public static JwtTokens newJwtTokens() {
+        return jwtTokens(NEW_ACCESS_TOKEN, NEW_REFRESH_TOKEN, DEFAULT_EXPIRES_IN);
     }
 
     public static String createValidRefreshToken(JwtProperties jwtProperties) {
