@@ -1,11 +1,14 @@
 package korobkin.nikita.user_profile_service.unit;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import korobkin.nikita.user_profile_service.config.JwtProperties;
 import korobkin.nikita.user_profile_service.controller.UserProfileController;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
+import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
+import korobkin.nikita.user_profile_service.fixtures.UserProfileResponseFixtures;
 import korobkin.nikita.user_profile_service.security.jwt.JwtService;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
@@ -23,8 +26,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -54,10 +55,12 @@ public class UserProfileControllerUnitTest {
     private JwtProperties jwtProperties;
 
     private UUID userId;
+    private String authenticationEmail;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
+        authenticationEmail = "test@mail.com";
     }
 
     @Test
@@ -66,7 +69,7 @@ public class UserProfileControllerUnitTest {
                 .willReturn(getUserProfileResponse(userId));
 
         mockMvc.perform(get("/api/profiles/me")
-                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, "test@mail.com"))))
+                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, authenticationEmail))))
                 .andExpect(status().isOk())
                 .andExpectAll(expectUserProfile(userId));
     }
@@ -76,12 +79,10 @@ public class UserProfileControllerUnitTest {
         given(userProfileService.fillUserProfile(any(UUID.class), any(UpdateUserProfileRequest.class)))
                 .willReturn(getUserProfileResponse(userId));
 
-        UpdateUserProfileRequest request = getUserProfileRequest();
-
         mockMvc.perform(post("/api/profiles")
-                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, "test@mail.com")))
+                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, authenticationEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(getUserProfileRequest())))
                 .andExpect(status().isCreated())
                 .andExpectAll(expectUserProfile(userId));
     }
@@ -102,9 +103,9 @@ public class UserProfileControllerUnitTest {
                 .willReturn(getUserProfileResponse(userId));
 
         mockMvc.perform(put("/api/profiles/me")
-                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, "test@mail.com")))
+                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, authenticationEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(getUserProfileRequest())))
+                        .content(json(getUserProfileRequest())))
                 .andExpect(status().isOk())
                 .andExpectAll(expectUserProfile(userId));
     }
@@ -114,13 +115,14 @@ public class UserProfileControllerUnitTest {
         given(userProfileService.updateUserProfileAvatar(any(UUID.class), any(UpdateUserProfileAvatarRequest.class)))
                 .willReturn(getUserProfileResponse(userId));
 
-        UpdateUserProfileAvatarRequest request = new UpdateUserProfileAvatarRequest();
-        request.setAvatarUrl("http://avatarUrl");
+        UpdateUserProfileAvatarRequest request = UserProfileRequestFixtures.updateUserProfileAvatarRequest(
+                UserProfileResponseFixtures.DEFAULT_AVATAR_URL
+        );
 
         mockMvc.perform(patch("/api/profiles/me/avatar")
-                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, "test@mail.com")))
+                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, authenticationEmail)))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(json(request)))
                 .andExpect(status().isOk())
                 .andExpectAll(expectUserProfile(userId));
     }
@@ -128,22 +130,22 @@ public class UserProfileControllerUnitTest {
     @Test
     void searchProfilesBySkills_success() throws Exception {
         Page<UserProfileResponse> page = new PageImpl<>(List.of(getUserProfileResponse(userId)));
-        given(userProfileService.findBySkills(any(Set.class), any(Pageable.class)))
+        given(userProfileService.findBySkills(any(), any(Pageable.class)))
                 .willReturn(page);
 
         mockMvc.perform(get("/api/profiles")
-                        .param("skills", "skill1")
+                        .param("skills", UserProfileResponseFixtures.VALUE_SKILL)
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].userId").value(userId.toString()))
-                .andExpect(jsonPath("$.content[0].nickname").value("nickname"))
-                .andExpect(jsonPath("$.content[0].firstName").value("firstName"))
-                .andExpect(jsonPath("$.content[0].lastName").value("lastName"))
-                .andExpect(jsonPath("$.content[0].bio").value("bio"))
-                .andExpect(jsonPath("$.content[0].avatarUrl").value("http://avatarUrl"))
-                .andExpect(jsonPath("$.content[0].skills[0]").value("skill1"))
-                .andExpect(jsonPath("$.content[0].links.github").value("github"));
+                .andExpect(jsonPath("$.content[0].nickname").value(UserProfileResponseFixtures.DEFAULT_NICKNAME))
+                .andExpect(jsonPath("$.content[0].firstName").value(UserProfileResponseFixtures.DEFAULT_FIRST_NAME))
+                .andExpect(jsonPath("$.content[0].lastName").value(UserProfileResponseFixtures.DEFAULT_LAST_NAME))
+                .andExpect(jsonPath("$.content[0].bio").value(UserProfileResponseFixtures.DEFAULT_BIO))
+                .andExpect(jsonPath("$.content[0].avatarUrl").value(UserProfileResponseFixtures.DEFAULT_AVATAR_URL))
+                .andExpect(jsonPath("$.content[0].skills[0]").value(UserProfileResponseFixtures.VALUE_SKILL))
+                .andExpect(jsonPath("$.content[0].links.github").value(UserProfileResponseFixtures.VALUE_LINK));
     }
 
     @Test
@@ -151,44 +153,40 @@ public class UserProfileControllerUnitTest {
         willDoNothing().given(userProfileService).deleteUserProfile(any(UUID.class));
 
         mockMvc.perform(delete("/api/profiles/me")
-                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, "test@mail.com"))))
+                        .with(TestSecurityUtils.userPrincipal(new UserPrincipal(userId, authenticationEmail))))
                 .andExpect(status().isNoContent());
     }
 
+    private String json(Object o) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(o);
+    }
+
     private UserProfileResponse getUserProfileResponse(UUID userId) {
-        return new UserProfileResponse(
-                userId,
-                "nickname",
-                "firstName",
-                "lastName",
-                "bio",
-                "http://avatarUrl",
-                Set.of("skill1"),
-                Map.of("github", "github"));
+        return UserProfileResponseFixtures.getDefault(userId);
     }
 
     private UpdateUserProfileRequest getUserProfileRequest() {
-        UpdateUserProfileRequest request = new UpdateUserProfileRequest();
-        request.setNickname("nickname");
-        request.setFirstName("firstName");
-        request.setLastName("lastName");
-        request.setBio("bio");
-        request.setAvatarUrl("http://avatarUrl");
-        request.setSkills(Set.of("skill1"));
-        request.setLinks(Map.of("github", "github"));
-        return request;
+        return UserProfileRequestFixtures.updateUserProfileRequest(
+                UserProfileResponseFixtures.DEFAULT_NICKNAME,
+                UserProfileResponseFixtures.DEFAULT_FIRST_NAME,
+                UserProfileResponseFixtures.DEFAULT_LAST_NAME,
+                UserProfileResponseFixtures.DEFAULT_BIO,
+                UserProfileResponseFixtures.DEFAULT_AVATAR_URL,
+                UserProfileResponseFixtures.DEFAULT_SKILLS,
+                UserProfileRequestFixtures.DEFAULT_LINKS
+        );
     }
 
     private ResultMatcher[] expectUserProfile(UUID userId) {
         return new ResultMatcher[]{
                 jsonPath("$.userId").value(userId.toString()),
-                jsonPath("$.nickname").value("nickname"),
-                jsonPath("$.firstName").value("firstName"),
-                jsonPath("$.lastName").value("lastName"),
-                jsonPath("$.bio").value("bio"),
-                jsonPath("$.avatarUrl").value("http://avatarUrl"),
-                jsonPath("$.skills[0]").value("skill1"),
-                jsonPath("$.links.github").value("github")
+                jsonPath("$.nickname").value(UserProfileResponseFixtures.DEFAULT_NICKNAME),
+                jsonPath("$.firstName").value(UserProfileResponseFixtures.DEFAULT_FIRST_NAME),
+                jsonPath("$.lastName").value(UserProfileResponseFixtures.DEFAULT_LAST_NAME),
+                jsonPath("$.bio").value(UserProfileResponseFixtures.DEFAULT_BIO),
+                jsonPath("$.avatarUrl").value(UserProfileResponseFixtures.DEFAULT_AVATAR_URL),
+                jsonPath("$.skills").value(UserProfileResponseFixtures.VALUE_SKILL),
+                jsonPath("$.links.github").value(UserProfileResponseFixtures.VALUE_LINK)
         };
     }
 }
