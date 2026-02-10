@@ -3,6 +3,7 @@ package korobkin.nikita.auth_service.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import korobkin.nikita.auth_service.docs.AuthControllerDocs;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
-public class AuthController {
+public class AuthController implements AuthControllerDocs {
 
     private final AuthService authService;
     private final CookieService cookieService;
