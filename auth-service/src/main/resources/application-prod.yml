@@ -13,6 +13,14 @@ spring:
   kafka:
     bootstrap-servers: ${BOOTSTRAP_SERVERS:kafka:9092}
 
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
 jwt:
   secret: ${JWT_SECRET:devfolio-secret}
   issuer: ${JWT_ISSUER:devfolio}
