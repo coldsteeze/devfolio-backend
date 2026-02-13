@@ -16,7 +16,7 @@ public class ApiError {
     @Schema(example = "409", description = "HTTP status code")
     private int status;
 
-    @Schema(example = "Bad Request", description = "Short description of the error")
+    @Schema(example = "Conflict", description = "Short description of the error")
     private String error;
 
     @Schema(example = "Email already exists", description = "Detailed error message")
