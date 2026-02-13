@@ -85,15 +85,10 @@ public class JwtFilter implements WebFilter {
     }
 
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/swagger-ui.html",
             "/swagger-ui",
-            "/swagger-ui/",
-            "/swagger-ui/index.html",
             "/v3/api-docs",
-            "/v3/api-docs/",
-            "/v3/api-docs/auth",
-            "/v3/api-docs/user-profile",
-            "/webjars"
+            "/webjars",
+            "/favicon.ico"
     );
 }
 
