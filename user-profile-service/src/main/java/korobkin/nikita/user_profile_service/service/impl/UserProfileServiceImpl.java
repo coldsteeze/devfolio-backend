@@ -4,6 +4,7 @@ import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.exception.ErrorCode;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -86,7 +88,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable) {
+    public PagedResponse<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable) {
         Page<UserProfile> profiles;
 
         if (skills.isEmpty()) {
@@ -95,7 +97,17 @@ public class UserProfileServiceImpl implements UserProfileService {
             profiles = userProfileRepository.findBySkillsIn(skills, pageable);
         }
 
-        return profiles.map(userProfileMapper::toDto);
+        List<UserProfileResponse> content = profiles.stream()
+                .map(userProfileMapper::toDto)
+                .toList();
+
+        return new PagedResponse<>(
+                content,
+                profiles.getNumber(),
+                profiles.getSize(),
+                profiles.getTotalElements(),
+                profiles.getTotalPages()
+        );
     }
 
     @Override

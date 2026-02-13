@@ -1,13 +1,14 @@
 package korobkin.nikita.user_profile_service.controller;
 
 import jakarta.validation.Valid;
+import korobkin.nikita.user_profile_service.docs.UserProfileControllerDocs;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/profiles")
-public class UserProfileController {
+public class UserProfileController implements UserProfileControllerDocs {
 
     private final UserProfileService userProfileService;
 
@@ -46,20 +47,20 @@ public class UserProfileController {
 
     @PutMapping("/me")
     public ResponseEntity<UserProfileResponse> updateMyProfile(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestBody UpdateUserProfileRequest request) {
+            @Valid @RequestBody UpdateUserProfileRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(userProfileService.updateUserProfile(principal.userId(), request));
     }
 
     @PatchMapping("/me/avatar")
     public ResponseEntity<UserProfileResponse> updateProfileAvatar(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @Valid @RequestBody UpdateUserProfileAvatarRequest request) {
+            @Valid @RequestBody UpdateUserProfileAvatarRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(userProfileService.updateUserProfileAvatar(principal.userId(), request));
     }
 
     @GetMapping
-    public ResponseEntity<Page<UserProfileResponse>> searchProfilesBySkills(
+    public ResponseEntity<PagedResponse<UserProfileResponse>> searchProfilesBySkills(
             @RequestParam("skills") Set<String> skills,
             @PageableDefault(sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(userProfileService.findBySkills(skills, pageable));
