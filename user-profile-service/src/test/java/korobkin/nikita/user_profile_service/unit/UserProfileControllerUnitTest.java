@@ -6,6 +6,7 @@ import korobkin.nikita.user_profile_service.config.JwtProperties;
 import korobkin.nikita.user_profile_service.controller.UserProfileController;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileResponseFixtures;
@@ -17,8 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -129,7 +128,7 @@ public class UserProfileControllerUnitTest {
 
     @Test
     void searchProfilesBySkills_success() throws Exception {
-        Page<UserProfileResponse> page = new PageImpl<>(List.of(getUserProfileResponse(userId)));
+        PagedResponse<UserProfileResponse> page = new PagedResponse<>(List.of(getUserProfileResponse(userId)), 0, 1, 1, 1);
         given(userProfileService.findBySkills(any(), any(Pageable.class)))
                 .willReturn(page);
 

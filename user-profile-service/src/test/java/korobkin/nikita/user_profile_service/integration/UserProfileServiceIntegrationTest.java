@@ -2,6 +2,7 @@ package korobkin.nikita.user_profile_service.integration;
 
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenException;
@@ -13,7 +14,6 @@ import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -44,8 +44,8 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfileResponse result = userProfileService.getUserProfile(profile.getUserId());
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(profile.getUserId());
-        assertThat(result.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
+        assertThat(result.userId()).isEqualTo(profile.getUserId());
+        assertThat(result.nickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
     }
 
     @Test
@@ -60,7 +60,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfile filledProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(filledProfile.getUserId());
+        assertThat(result.userId()).isEqualTo(filledProfile.getUserId());
         assertThat(filledProfile.getNickname()).isEqualTo(UserProfileRequestFixtures.DEFAULT_NICKNAME);
         assertThat(filledProfile.getFirstName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_FIRST_NAME);
         assertThat(filledProfile.getLastName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LAST_NAME);
@@ -83,7 +83,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfile updatedProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(profile.getUserId());
+        assertThat(result.userId()).isEqualTo(profile.getUserId());
         assertThat(updatedProfile.getNickname()).isEqualTo(UserProfileRequestFixtures.DEFAULT_NICKNAME);
         assertThat(updatedProfile.getFirstName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_FIRST_NAME);
         assertThat(updatedProfile.getLastName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LAST_NAME);
@@ -105,7 +105,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(profile.getUserId());
+        assertThat(result.userId()).isEqualTo(profile.getUserId());
         assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
         assertThat(updatedAvatarProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.NEW_AVATAR_URL);
     }
@@ -122,7 +122,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(profile.getUserId());
+        assertThat(result.userId()).isEqualTo(profile.getUserId());
         assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
         assertThat(updatedAvatarProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.NEW_AVATAR_URL);
         assertThat(updatedAvatarProfile.getUpdatedAt()).isNotNull();
@@ -140,7 +140,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
 
         assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(profile.getUserId());
+        assertThat(result.userId()).isEqualTo(profile.getUserId());
         assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
     }
 
@@ -149,10 +149,10 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         createProfile(UserProfileFixtures.FIRST_USER_NICKNAME);
         createProfile(UserProfileFixtures.SECOND_USER_NICKNAME);
 
-        Page<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
+        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
 
-        assertThat(result.getContent())
-                .extracting(UserProfileResponse::getNickname)
+        assertThat(result.content())
+                .extracting(UserProfileResponse::nickname)
                 .containsExactlyInAnyOrder(
                         UserProfileFixtures.FIRST_USER_NICKNAME,
                         UserProfileFixtures.SECOND_USER_NICKNAME
@@ -164,14 +164,14 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         createProfile(UserProfileFixtures.FIRST_USER_NICKNAME, Set.of(UserProfileFixtures.FIRST_USER_SKILL));
         createProfile(UserProfileFixtures.SECOND_USER_NICKNAME, Set.of(UserProfileFixtures.SECOND_USER_SKILL));
 
-        Page<UserProfileResponse> result = userProfileService.findBySkills(
+        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(
                 Set.of(UserProfileFixtures.FIRST_USER_SKILL),
                 PageRequest.of(0, 10)
 
         );
 
-        assertThat(result.getContent())
-                .extracting(UserProfileResponse::getNickname)
+        assertThat(result.content())
+                .extracting(UserProfileResponse::nickname)
                 .containsExactly(UserProfileFixtures.FIRST_USER_NICKNAME);
     }
 
@@ -179,12 +179,12 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
     void findProfiles_withPageable_returnsCorrectPage() {
         UserProfile profile = createProfile();
 
-        Page<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
+        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
 
-        assertThat(result.getPageable().getPageNumber()).isEqualTo(0);
-        assertThat(result.getPageable().getPageSize()).isEqualTo(10);
-        assertThat(result.getContent())
-                .extracting(UserProfileResponse::getUserId)
+        assertThat(result.pageNumber()).isEqualTo(0);
+        assertThat(result.pageSize()).isEqualTo(10);
+        assertThat(result.content())
+                .extracting(UserProfileResponse::userId)
                 .containsExactly(profile.getUserId());
     }
 
