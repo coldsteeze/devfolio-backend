@@ -3,8 +3,8 @@ package korobkin.nikita.user_profile_service.service;
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Set;
@@ -22,7 +22,7 @@ public interface UserProfileService {
 
     UserProfileResponse updateUserProfileAvatar(UUID id, UpdateUserProfileAvatarRequest request);
 
-    Page<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable);
+    PagedResponse<UserProfileResponse> findBySkills(Set<String> skills, Pageable pageable);
 
     void deleteUserProfile(UUID id);
 }
