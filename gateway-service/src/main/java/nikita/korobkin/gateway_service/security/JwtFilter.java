@@ -16,6 +16,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -29,6 +30,10 @@ public class JwtFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+
+        if (isPublicPath(path)) {
+            return chain.filter(exchange);
+        }
 
         // OPTIONS пропускаем сразу
         if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS
@@ -74,5 +79,16 @@ public class JwtFilter implements WebFilter {
 
         return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
     }
+
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/webjars",
+            "/favicon.ico"
+    );
 }
 

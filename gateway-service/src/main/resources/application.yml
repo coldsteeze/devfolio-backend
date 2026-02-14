@@ -2,3 +2,11 @@ spring:
   application:
     name: gateway-service
 
+springdoc:
+  swagger-ui:
+    urls:
+      - name: auth-service
+        url: /v3/api-docs/auth
+      - name: user-profile-service
+        url: /v3/api-docs/user-profile
+
