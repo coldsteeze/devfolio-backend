@@ -26,7 +26,8 @@ public class SecurityConfig {
                                 "/api/profiles",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html")
+                                "/swagger-ui.html",
+                                "/webjars/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 )
