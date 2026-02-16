@@ -1,6 +1,7 @@
 package korobkin.nikita.auth_service.entity;
 
 import jakarta.persistence.*;
+import korobkin.nikita.auth_service.entity.enums.UserRole;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,10 @@ public class User {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role;
 
     @Column(name = "logged_at")
     private LocalDateTime loggedAt;
