@@ -14,6 +14,7 @@
         <module>user-profile-service</module>
         <module>common-events</module>
         <module>gateway-service</module>
+        <module>skill-service</module>
     </modules>
 
     <properties>
