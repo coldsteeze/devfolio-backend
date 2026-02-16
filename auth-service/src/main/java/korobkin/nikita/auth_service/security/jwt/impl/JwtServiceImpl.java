@@ -36,7 +36,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateAccessToken(UUID userId, String email) {
+    public String generateAccessToken(UUID userId, String email, String userRole) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenExpirationMinutes()));
 
@@ -44,6 +44,7 @@ public class JwtServiceImpl implements JwtService {
                 .withSubject(userId.toString())
                 .withClaim("email", email)
                 .withClaim("type", ACCESS_TOKEN_TYPE)
+                .withClaim("role", userRole)
                 .withIssuer(jwtProperties.getIssuer())
                 .withIssuedAt(Date.from(now))
                 .withExpiresAt(Date.from(expiresAt))

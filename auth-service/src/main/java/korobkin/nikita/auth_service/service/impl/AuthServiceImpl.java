@@ -4,6 +4,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.transaction.Transactional;
+import korobkin.nikita.auth_service.entity.enums.UserRole;
 import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
@@ -55,12 +56,13 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userMapper.toEntity(registerRequest);
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setRole(UserRole.ROLE_USER);
         user.setLoggedAt(LocalDateTime.now());
         userRepository.save(user);
 
         log.info("User registered successfully: userId={}, email={}", user.getId(), user.getEmail());
 
-        String access = jwtService.generateAccessToken(user.getId(), user.getEmail());
+        String access = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refresh = jwtService.generateRefreshToken(user.getId(), user.getEmail());
 
         tokenService.saveRefreshToken(
@@ -88,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
             log.info("User logged in: userId={}, email={}", user.getId(), user.getEmail());
 
-            String access = jwtService.generateAccessToken(user.getId(), user.getEmail());
+            String access = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
             String refresh = jwtService.generateRefreshToken(user.getId(), user.getEmail());
 
             tokenService.saveRefreshToken(
@@ -136,11 +138,11 @@ public class AuthServiceImpl implements AuthService {
         UUID userId = jwtService.getUserIdFromVerifiedToken(jwt);
         String email = jwtService.getEmailFromVerifiedToken(jwt);
 
-        getUserOrThrow(userId);
+        User user = getUserOrThrow(userId);
 
         validateStoredRefreshToken(refreshToken, userId);
 
-        return generateAndSaveTokens(userId, email);
+        return generateAndSaveTokens(userId, email, user.getRole().name());
     }
 
     private DecodedJWT validateRefreshTokenFormat(String refreshToken) {
@@ -164,8 +166,8 @@ public class AuthServiceImpl implements AuthService {
         return jwt;
     }
 
-    private void getUserOrThrow(UUID userId) {
-        userRepository.findById(userId)
+    private User getUserOrThrow(UUID userId) {
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidRefreshTokenException(ErrorCode.REFRESH_TOKEN_INVALID));
     }
 
@@ -177,8 +179,8 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private JwtTokens generateAndSaveTokens(UUID userId, String email) {
-        String access = jwtService.generateAccessToken(userId, email);
+    private JwtTokens generateAndSaveTokens(UUID userId, String email, String userRole) {
+        String access = jwtService.generateAccessToken(userId, email, userRole);
         String newRefresh = jwtService.generateRefreshToken(userId, email);
 
         tokenService.saveRefreshToken(

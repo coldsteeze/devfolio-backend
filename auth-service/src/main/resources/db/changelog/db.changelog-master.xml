@@ -7,4 +7,5 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <include file="db/changelog/changes/001_create_users_table.xml"/>
+    <include file="db/changelog/changes/002_add_roles_column_to_users.xml"/>
 </databaseChangeLog>

@@ -6,6 +6,7 @@ import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.entity.enums.UserRole;
 import korobkin.nikita.auth_service.exception.EmailAlreadyExistsException;
 import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
@@ -157,7 +158,7 @@ public class AuthServiceUnitTest {
                 u.setId(userId);
                 return u;
             });
-            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                     .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
             given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
                     .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
@@ -191,7 +192,7 @@ public class AuthServiceUnitTest {
         void login_shouldReturnJwtTokens_whenCredentialsAreValid() {
             given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .willReturn(authentication);
-            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                     .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
             given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
                     .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
@@ -223,7 +224,7 @@ public class AuthServiceUnitTest {
             given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .willReturn(authentication);
 
-            given(jwtService.generateAccessToken(eq(savedUser.getId()), eq(AuthRequestFixtures.VALID_EMAIL)))
+            given(jwtService.generateAccessToken(eq(savedUser.getId()), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                     .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
             given(jwtService.generateRefreshToken(eq(savedUser.getId()), eq(AuthRequestFixtures.VALID_EMAIL)))
                     .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
@@ -250,7 +251,7 @@ public class AuthServiceUnitTest {
             given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(tokenService.getRefreshToken(userId)).willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
-            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                     .willReturn(JwtTokenFixtures.NEW_ACCESS_TOKEN);
             given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
                     .willReturn(JwtTokenFixtures.NEW_REFRESH_TOKEN);
@@ -305,7 +306,7 @@ public class AuthServiceUnitTest {
             given(jwtService.getEmailFromVerifiedToken(jwt)).willReturn(AuthRequestFixtures.VALID_EMAIL);
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(tokenService.getRefreshToken(userId)).willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);
-            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+            given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                     .willReturn(JwtTokenFixtures.NEW_ACCESS_TOKEN);
             given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
                     .willReturn(JwtTokenFixtures.NEW_REFRESH_TOKEN);
@@ -401,7 +402,7 @@ public class AuthServiceUnitTest {
             u.setId(userId);
             return u;
         });
-        given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
+        given(jwtService.generateAccessToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL), eq(UserRole.ROLE_USER.name())))
                 .willReturn(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
         given(jwtService.generateRefreshToken(any(UUID.class), eq(AuthRequestFixtures.VALID_EMAIL)))
                 .willReturn(JwtTokenFixtures.DEFAULT_REFRESH_TOKEN);

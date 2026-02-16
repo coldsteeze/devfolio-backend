@@ -1,6 +1,7 @@
 package korobkin.nikita.auth_service.fixtures;
 
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.entity.enums.UserRole;
 import lombok.experimental.UtilityClass;
 
 import java.util.UUID;
@@ -14,6 +15,7 @@ public class UserFixtures {
         User user = new User();
         user.setEmail(AuthRequestFixtures.VALID_EMAIL);
         user.setPassword(AuthRequestFixtures.VALID_PASSWORD);
+        user.setRole(UserRole.ROLE_USER);
 
         return user;
     }

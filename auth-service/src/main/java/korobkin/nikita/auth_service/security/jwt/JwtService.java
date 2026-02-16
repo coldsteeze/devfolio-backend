@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public interface JwtService {
 
-    String generateAccessToken(UUID userId, String email);
+    String generateAccessToken(UUID userId, String email, String userRole);
 
     String generateRefreshToken(UUID userId, String email);
 
