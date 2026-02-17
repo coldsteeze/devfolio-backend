@@ -1,23 +1,24 @@
-package korobkin.nikita.user_profile_service.security.jwt.impl;
+package korobkin.nikita.jwtsecuritystarter.security.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import korobkin.nikita.user_profile_service.config.JwtProperties;
-import korobkin.nikita.user_profile_service.security.jwt.JwtService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import korobkin.nikita.jwtsecuritystarter.config.JwtProperties;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-@Service
-@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
 
     public static final String ACCESS_TOKEN_TYPE = "access_token";
-
     private final JwtProperties jwtProperties;
+
+    public JwtServiceImpl(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
 
     @Override
     public DecodedJWT verifyAccessToken(String token) throws JWTVerificationException {
@@ -27,7 +28,7 @@ public class JwtServiceImpl implements JwtService {
                 .verify(token);
 
         if (!ACCESS_TOKEN_TYPE.equals(jwt.getClaim("type").asString())) {
-            throw new JWTVerificationException("Invalid token type");
+            throw new JWTVerificationException("Invalid token type. Expected: " + ACCESS_TOKEN_TYPE);
         }
 
         return jwt;
@@ -41,5 +42,11 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String getEmailFromVerifiedToken(DecodedJWT jwt) {
         return jwt.getClaim("email").asString();
+    }
+
+    @Override
+    public List<String> getRolesFromVerifiedToken(DecodedJWT jwt) {
+        return Optional.ofNullable(jwt.getClaim("role").asList(String.class))
+                .orElse(Collections.emptyList());
     }
 }

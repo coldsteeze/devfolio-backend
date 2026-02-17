@@ -77,11 +77,6 @@
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.auth0</groupId>
-			<artifactId>java-jwt</artifactId>
-			<version>4.5.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.mapstruct</groupId>
 			<artifactId>mapstruct</artifactId>
 			<version>1.6.3</version>
@@ -136,6 +131,11 @@
 			<artifactId>testcontainers</artifactId>
 			<version>2.0.3</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>korobkin.nikita</groupId>
+			<artifactId>jwt-security-starter</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 

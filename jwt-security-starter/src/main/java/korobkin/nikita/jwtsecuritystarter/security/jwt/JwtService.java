@@ -1,8 +1,9 @@
-package korobkin.nikita.user_profile_service.security.jwt;
+package korobkin.nikita.jwtsecuritystarter.security.jwt;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface JwtService {
@@ -12,4 +13,6 @@ public interface JwtService {
     UUID getUserIdFromVerifiedToken(DecodedJWT jwt);
 
     String getEmailFromVerifiedToken(DecodedJWT jwt);
+
+    List<String> getRolesFromVerifiedToken(DecodedJWT jwt);
 }

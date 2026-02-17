@@ -2,7 +2,8 @@ package korobkin.nikita.user_profile_service.unit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import korobkin.nikita.user_profile_service.config.JwtProperties;
+import korobkin.nikita.jwtsecuritystarter.config.JwtProperties;
+import korobkin.nikita.jwtsecuritystarter.security.jwt.JwtService;
 import korobkin.nikita.user_profile_service.controller.UserProfileController;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
@@ -10,7 +11,6 @@ import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileResponseFixtures;
-import korobkin.nikita.user_profile_service.security.jwt.JwtService;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.BeforeEach;
