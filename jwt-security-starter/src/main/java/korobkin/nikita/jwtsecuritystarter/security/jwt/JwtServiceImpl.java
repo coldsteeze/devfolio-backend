@@ -8,7 +8,6 @@ import korobkin.nikita.jwtsecuritystarter.config.JwtProperties;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public class JwtServiceImpl implements JwtService {
@@ -46,7 +45,12 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public List<String> getRolesFromVerifiedToken(DecodedJWT jwt) {
-        return Optional.ofNullable(jwt.getClaim("role").asList(String.class))
-                .orElse(Collections.emptyList());
+        String role = jwt.getClaim("role").asString();
+
+        if (role != null && !role.trim().isEmpty()) {
+            return Collections.singletonList(role.trim());
+        }
+
+        return Collections.emptyList();
     }
 }
