@@ -1,0 +1,41 @@
+name: docker-build-push-skill-service.yml
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'skill-service-service/**'
+      - '.github/workflows/docker-build-push-skill-service.yml'
+  workflow_dispatch:
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build all modules
+        run: mvn clean install
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME_SKILL }}
+          password: ${{ secrets.DOCKER_PASSWORD_SKILL }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./skill-service
+          file: ./skill-service/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME_SKILL }}/skill-service:latest
+
