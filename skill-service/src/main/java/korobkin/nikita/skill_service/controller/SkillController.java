@@ -37,7 +37,7 @@ public class SkillController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<SkillResponse> getSkill(@PathVariable("id") UUID skillId) {
-        return ResponseEntity.ok(skillService.findSkill (skillId));
+        return ResponseEntity.ok(skillService.findSkill(skillId));
     }
 
     @PostMapping("/by-ids")
