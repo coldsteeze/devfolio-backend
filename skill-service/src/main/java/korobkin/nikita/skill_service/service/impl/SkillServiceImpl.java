@@ -45,12 +45,7 @@ public class SkillServiceImpl implements SkillService {
                 pageable.getPageSize(),
                 pageable.getSort());
 
-
-        boolean includeInactive = SecurityUtils.hasRole("ADMIN");
-
-        System.out.println("includeInactive: " + includeInactive);
-
-        request.setIncludeInactive(includeInactive);
+        request.setIncludeInactive(canViewInactiveSkills());
 
         Page<Skill> page = skillRepository.findAllByFilters(request, pageable);
 
@@ -88,7 +83,7 @@ public class SkillServiceImpl implements SkillService {
         Skill skill = skillRepository.findById(skillId)
                 .orElseThrow(() -> new SkillNotFoundException(ErrorCode.SKILL_NOT_FOUND));
 
-        if (!skill.isActive() && SecurityUtils.hasRole("USER")) {
+        if (!skill.isActive() && !canViewInactiveSkills()) {
             throw new SkillNotFoundException(ErrorCode.SKILL_NOT_FOUND);
         }
 
@@ -106,7 +101,7 @@ public class SkillServiceImpl implements SkillService {
 
         List<Skill> skills;
 
-        if (SecurityUtils.hasRole("ADMIN")) {
+        if (canViewInactiveSkills()) {
             skills = skillRepository.findAllById(skillIds);
         } else {
             skills = skillRepository.findAllByIdInAndActiveTrue(skillIds);
@@ -147,5 +142,9 @@ public class SkillServiceImpl implements SkillService {
         skill.setUpdatedAt(LocalDateTime.now());
 
         log.info("Skill with id {} deactivated", skillId);
+    }
+
+    private boolean canViewInactiveSkills() {
+        return SecurityUtils.hasRole("ADMIN");
     }
 }
