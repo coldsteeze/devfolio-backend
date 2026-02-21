@@ -2,8 +2,10 @@ package korobkin.nikita.skill_service.fixtures;
 
 import korobkin.nikita.skill_service.dto.request.BulkSkillRequest;
 import korobkin.nikita.skill_service.dto.request.CreateSkillRequest;
+import korobkin.nikita.skill_service.dto.request.SkillFilterRequest;
 import korobkin.nikita.skill_service.dto.request.UpdateSkillRequest;
 import korobkin.nikita.skill_service.entity.Skill;
+import korobkin.nikita.skill_service.entity.enums.SkillCategory;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -32,5 +34,13 @@ public class SkillRequestFixtures {
         updateSkillRequest.setCategory(skill.getCategory());
 
         return updateSkillRequest;
+    }
+
+    public static SkillFilterRequest skillFilterRequest(String search, SkillCategory skillCategory) {
+        SkillFilterRequest skillFilterRequest = new SkillFilterRequest();
+        skillFilterRequest.setSearch(search);
+        skillFilterRequest.setCategory(skillCategory);
+
+        return skillFilterRequest;
     }
 }
