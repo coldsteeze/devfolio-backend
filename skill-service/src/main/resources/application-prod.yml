@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://user_profile_postgres:5432/${SKILL_SERVICE_POSTGRES_DB}
+    url: jdbc:postgresql://skill_postgres:5432/${SKILL_SERVICE_POSTGRES_DB}
     username: ${SKILL_SERVICE_POSTGRES_USER}
     password: ${SKILL_SERVICE_POSTGRES_PASSWORD}
 
