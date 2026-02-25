@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/skill_service
+    username: postgres
+    password: postgres
+
+server:
+  port: 8083
+
+jwt:
+  secret: my-dev-secret
+  issuer: dev-issuer
