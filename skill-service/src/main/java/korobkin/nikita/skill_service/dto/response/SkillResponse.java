@@ -5,6 +5,7 @@ import korobkin.nikita.skill_service.entity.enums.SkillCategory;
 
 import java.util.UUID;
 
+@Schema(description = "Skill response")
 public record SkillResponse(
 
         @Schema(example = "123e4567-e89b-12d3-a456-426614174000", description = "Unique skill identifier")
