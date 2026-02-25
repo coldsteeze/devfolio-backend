@@ -1,6 +1,7 @@
 package korobkin.nikita.skill_service.controller;
 
 import jakarta.validation.Valid;
+import korobkin.nikita.skill_service.docs.SkillControllerDocs;
 import korobkin.nikita.skill_service.dto.request.BulkSkillRequest;
 import korobkin.nikita.skill_service.dto.request.CreateSkillRequest;
 import korobkin.nikita.skill_service.dto.request.SkillFilterRequest;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/skills")
-public class SkillController {
+public class SkillController implements SkillControllerDocs {
 
     private final SkillService skillService;
 
