@@ -13,4 +13,5 @@ public class UriProperties {
 
     private String authServiceUri;
     private String userProfileServiceUri;
+    private String skillServiceUri;
 }
