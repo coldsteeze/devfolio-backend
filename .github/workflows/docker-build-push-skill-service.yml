@@ -5,7 +5,7 @@ on:
     branches:
       - dev
     paths:
-      - 'skill-service-service/**'
+      - 'skill-service/**'
       - '.github/workflows/docker-build-push-skill-service.yml'
   workflow_dispatch:
 jobs:
