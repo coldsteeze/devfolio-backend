@@ -19,15 +19,20 @@ public class GatewayConfig {
                         r -> r.path("/api/auth/**").uri(uriProperties.getAuthServiceUri()))
                 .route("user-profile-service",
                         r -> r.path("/api/profiles/**").uri(uriProperties.getUserProfileServiceUri()))
+                .route("skill-service",
+                        r -> r.path("/api/skills/**").uri(uriProperties.getSkillServiceUri()))
                 .route("auth-service-docs",
                         r -> r.path("/v3/api-docs/auth")
                                 .filters(f -> f.rewritePath("/v3/api-docs/auth", "/v3/api-docs"))
                                 .uri(uriProperties.getAuthServiceUri()))
-
                 .route("user-profile-service-docs",
                         r -> r.path("/v3/api-docs/user-profile")
                                 .filters(f -> f.rewritePath("/v3/api-docs/user-profile", "/v3/api-docs"))
                                 .uri(uriProperties.getUserProfileServiceUri()))
+                .route("skill-service-docs",
+                        r -> r.path("/v3/api-docs/skill")
+                                .filters(f -> f.rewritePath("/v3/api-docs/skill", "/v3/api-docs"))
+                                .uri(uriProperties.getSkillServiceUri()))
                 .build();
     }
 }

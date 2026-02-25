@@ -9,4 +9,6 @@ springdoc:
         url: /v3/api-docs/auth
       - name: user-profile-service
         url: /v3/api-docs/user-profile
+      - name: skill-service
+        url: /v3/api-docs/skill
 

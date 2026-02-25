@@ -1,6 +1,7 @@
 services:
   auth-service-uri: http://localhost:8081
   user-profile-service-uri: http://localhost:8082
+  skill-service-uri: http://localhost:8083
 
 cors:
   frontend-url: http://localhost:63342
