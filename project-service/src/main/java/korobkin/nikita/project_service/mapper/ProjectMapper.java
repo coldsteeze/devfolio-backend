@@ -1,0 +1,26 @@
+package korobkin.nikita.project_service.mapper;
+
+import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
+import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
+import korobkin.nikita.project_service.dto.response.ProjectResponse;
+import korobkin.nikita.project_service.entity.Project;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+
+import java.util.List;
+
+@Mapper(componentModel = "spring", uses = {ProjectSkillMapper.class})
+public interface ProjectMapper {
+
+    @Mapping(target = "projectPublic", source = "projectPublic")
+    ProjectResponse toDto(Project project);
+
+    List<ProjectResponse> toDtoList(List<Project> projects);
+
+    void updateEntityFromDto(UpdateProjectRequest request, @MappingTarget Project project);
+
+    @Mapping(target = "project", source = "project")
+    @Mapping(target = "skills", source = "skills")
+    ProjectDetailsResponse toDetailsDto(Project project);
+}
