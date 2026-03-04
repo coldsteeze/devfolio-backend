@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.UUID;
 
 public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpecificationExecutor<Project> {
+
+    boolean existsByName(String name);
 }

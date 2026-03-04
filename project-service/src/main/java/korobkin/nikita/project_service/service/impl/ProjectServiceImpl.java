@@ -13,6 +13,7 @@ import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
+import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
@@ -47,6 +48,10 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectResponse createProject(CreateProjectRequest request, UserPrincipal user) {
+        if (projectRepository.existsByName(request.getName())) {
+            throw new ProjectAlreadyExistsException(ErrorCode.PROJECT_ALREADY_EXISTS);
+        }
+
         Project project = new Project();
         project.setUserId(user.userId());
         project.setName(request.getName());
