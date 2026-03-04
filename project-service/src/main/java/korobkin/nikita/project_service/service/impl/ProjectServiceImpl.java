@@ -2,13 +2,16 @@ package korobkin.nikita.project_service.service.impl;
 
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
+import korobkin.nikita.project_service.client.SkillClient;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
 import korobkin.nikita.project_service.dto.response.ProjectResponse;
 import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
 import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
@@ -35,6 +38,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final ProjectSkillService projectSkillService;
+    private final SkillClient skillClient;
     private final SkillEventProducer skillEventProducer;
 
     @Override
@@ -152,8 +156,13 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
 
+        ProjectSkill projectSkill = projectSkillService.findProjectSkillByProjectAndSkill(project, skillId);
+
+        SkillResponse skillResponse = skillClient.getSkillById(projectSkill.getSkillId());
+
         skillEventProducer.sendVerificationRequest(
-                new ProjectSkillVerificationRequestedEvent(projectId, skillId)
+                new ProjectSkillVerificationRequestedEvent(
+                        projectId, skillId, skillResponse.name(), project.getGithubUrl())
         );
 
         return new VerificationResponse("VERIFICATION_REQUESTED");
