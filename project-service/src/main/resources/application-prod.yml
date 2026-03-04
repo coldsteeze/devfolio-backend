@@ -18,3 +18,7 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${JWT_ISSUER}
+
+services:
+  skill-service:
+    url: ${SKILL_SERVICE_URL}

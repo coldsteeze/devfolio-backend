@@ -14,6 +14,6 @@ jwt:
   secret: my-dev-secret
   issuer: dev-issuer
 
-skill-service:
-  base-url: http://localhost:8080
-  path: /api/skills
+services:
+  skill-service:
+    url: http://localhost:8083
