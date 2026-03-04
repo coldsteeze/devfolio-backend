@@ -2,12 +2,11 @@ package korobkin.nikita.project_service.service;
 
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
-import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
-import korobkin.nikita.project_service.dto.response.ProjectResponse;
-import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
-import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,7 +19,12 @@ public interface ProjectService {
 
     ProjectDetailsResponse getProject(UUID projectId, UserPrincipal user);
 
-    List<ProjectResponse> getUserProjects(UUID userId, UserPrincipal user);
+    PagedResponse<ProjectResponse> getUserProjects(
+            UUID userId,
+            UserPrincipal user,
+            ProjectFilterRequest filter,
+            Pageable pageable
+    );
 
     void deleteProject(UUID projectId, UserPrincipal user);
 

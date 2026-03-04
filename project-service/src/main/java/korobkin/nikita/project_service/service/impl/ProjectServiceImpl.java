@@ -1,14 +1,13 @@
 package korobkin.nikita.project_service.service.impl;
 
+import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
 import korobkin.nikita.project_service.client.SkillClient;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
-import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
-import korobkin.nikita.project_service.dto.response.ProjectResponse;
-import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
-import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
@@ -23,10 +22,14 @@ import korobkin.nikita.project_service.service.ProjectService;
 import korobkin.nikita.project_service.service.ProjectSkillService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -91,18 +94,23 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProjectResponse> getUserProjects(UUID userId, UserPrincipal user) {
-        List<Project> projects;
+    public PagedResponse<ProjectResponse> getUserProjects(
+            UUID userId,
+            UserPrincipal user,
+            ProjectFilterRequest filter,
+            Pageable pageable
+    ) {
+        Page<Project> projectsPage;
 
-        if (userId.equals(user.userId())) {
-            projects = projectRepository.findProjectsByUserId(userId);
-        } else {
-            projects = projectRepository.findProjectsByUserIdAndProjectPublic(userId, true);
+        if (!userId.equals(user.userId())) {
+            filter.setProjectPublic(true);
         }
+
+        projectsPage = getUserProjectsWithFilters(userId, filter, pageable);
 
         log.info("Successfully get user projects with user id {}", userId);
 
-        return projectMapper.toDtoList(projects);
+        return projectMapper.toPagedDto(projectsPage);
     }
 
     @Override
@@ -193,5 +201,29 @@ public class ProjectServiceImpl implements ProjectService {
         log.info("Get projects skill with project id {}", projectId);
 
         return projectSkillService.getProjectSkills(project);
+    }
+
+    private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
+        Specification<Project> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("userId"), userId));
+
+            if (filter.getSearch() != null) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + filter.getSearch().toLowerCase() + "%"));
+            }
+            if (filter.getProjectPublic() != null) {
+                predicates.add(cb.equal(root.get("projectPublic"), filter.getProjectPublic()));
+            }
+            if (filter.getCreatedAfter() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), filter.getCreatedAfter()));
+            }
+            if (filter.getCreatedBefore() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), filter.getCreatedBefore()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return projectRepository.findAll(spec, pageable);
     }
 }
