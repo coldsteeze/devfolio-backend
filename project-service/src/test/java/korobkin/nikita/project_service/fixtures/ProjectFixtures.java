@@ -32,6 +32,10 @@ public class ProjectFixtures {
         return project(UUID.randomUUID(), invalidName, DESCRIPTION, VALID_GITHUB_URL, PROJECT_PUBLIC_TRUE);
     }
 
+    public static Project projectWithCustomName(UUID userId, String name) {
+        return project(userId, name, DESCRIPTION, VALID_GITHUB_URL, PROJECT_PUBLIC_TRUE);
+    }
+
     public static Project project(UUID userId, String name, String description, String githubUrl, boolean projectPublic) {
         Project project = new Project();
         project.setUserId(userId);
