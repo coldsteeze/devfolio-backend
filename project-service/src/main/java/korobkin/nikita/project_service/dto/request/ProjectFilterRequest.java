@@ -1,13 +1,15 @@
 package korobkin.nikita.project_service.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(description = "Request filter DTO for searching user's projects")
 public class ProjectFilterRequest {
 
