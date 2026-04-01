@@ -13,9 +13,9 @@ public interface ProjectSkillService {
 
     void deleteForProject(Project project, UUID skillId);
 
-    void confirmForProject(Project project, UUID skillId);
+    void confirmProjectSkill(UUID projectSkillId);
 
     List<ProjectSkillResponse> getProjectSkills(Project project);
 
-    ProjectSkill findProjectSkillByProjectAndSkill(Project project, UUID skillId);
+    List<ProjectSkill> findProjectSkillsByProject(Project project);
 }

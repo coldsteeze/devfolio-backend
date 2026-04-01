@@ -3,6 +3,7 @@ package korobkin.nikita.project_service.service.impl;
 import feign.FeignException;
 import korobkin.nikita.project_service.client.SkillClient;
 import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
+import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
@@ -36,9 +37,8 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
         }
 
         try {
-            skillClient.getSkillById(skillId);
-            ProjectSkill projectSkill = new ProjectSkill();
-            projectSkill.setSkillId(skillId);
+            SkillResponse response = skillClient.getSkillById(skillId);
+            ProjectSkill projectSkill = projectSkillMapper.toEntity(response);
             projectSkill.setProject(project);
             projectSkill.setManuallyAdded(manuallyAdded);
 
@@ -63,26 +63,25 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
     }
 
     @Override
-    public void confirmForProject(Project project, UUID skillId) {
-        ProjectSkill projectSkill = projectSkillRepository.findProjectSkillByProjectAndSkillId(project, skillId)
+    public void confirmProjectSkill(UUID projectSkillId) {
+        ProjectSkill projectSkill = projectSkillRepository.findById(projectSkillId)
                 .orElseThrow(() -> new ProjectSkillNotFoundException(ErrorCode.PROJECT_SKILL_NOT_FOUND));
 
         projectSkill.setConfirmed(true);
-        log.info("Confirm skill for project with id {}", project.getId());
+        log.info("Confirm skill for project with id {}", projectSkill.getProject().getId());
     }
 
     @Override
     public List<ProjectSkillResponse> getProjectSkills(Project project) {
-        List<ProjectSkill> projectSkills = projectSkillRepository.findProjectSkillsByProject(project);
-
         log.info("Get project skills by project id {}", project.getId());
 
-        return projectSkillMapper.toDtoList(projectSkills);
+        return projectSkillMapper.toDtoList(
+                projectSkillRepository.findByProjectId(project.getId())
+        );
     }
 
     @Override
-    public ProjectSkill findProjectSkillByProjectAndSkill(Project project, UUID skillId) {
-        return projectSkillRepository.findProjectSkillByProjectAndSkillId(project, skillId)
-                .orElseThrow(() -> new ProjectSkillNotFoundException(ErrorCode.PROJECT_SKILL_NOT_FOUND));
+    public List<ProjectSkill> findProjectSkillsByProject(Project project) {
+        return project.getSkills();
     }
 }

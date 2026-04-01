@@ -3,12 +3,11 @@ package korobkin.nikita.project_service.service.impl;
 import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
-import korobkin.nikita.project_service.client.SkillClient;
+import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
-import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
@@ -17,6 +16,7 @@ import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
+import korobkin.nikita.project_service.mapper.SkillEventMapper;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
@@ -42,8 +42,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final ProjectSkillService projectSkillService;
-    private final SkillClient skillClient;
     private final SkillEventProducer skillEventProducer;
+    private final SkillEventMapper skillEventMapper;
 
     @Override
     @Transactional
@@ -161,7 +161,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public VerificationResponse verifySkillProject(UUID projectId, UUID skillId, UserPrincipal user) {
+    public VerificationResponse verifySkillProject(UUID projectId, UserPrincipal user) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
 
@@ -169,13 +169,13 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
 
-        ProjectSkill projectSkill = projectSkillService.findProjectSkillByProjectAndSkill(project, skillId);
+        List<ProjectSkill> projectSkills = project.getSkills();
 
-        SkillResponse skillResponse = skillClient.getSkillById(projectSkill.getSkillId());
+        System.out.println(projectSkills);
 
         skillEventProducer.sendVerificationRequest(
                 new ProjectSkillVerificationRequestedEvent(
-                        projectId, skillId, skillResponse.name(), project.getGithubUrl())
+                        projectId, project.getGithubUrl(), skillEventMapper.toEventList(projectSkills))
         );
 
         return new VerificationResponse("VERIFICATION_REQUESTED");
@@ -184,13 +184,19 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void confirmSkillProject(ProjectSkillVerificationCompletedEvent event) {
-        if (event.confirmed()) {
-            Project project = projectRepository.findById(event.projectId())
-                    .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        if (!projectRepository.existsById(event.projectId())) {
+            log.warn("Project {} not found, skipping verification result", event.projectId());
+            return;
+        }
 
-            projectSkillService.confirmForProject(project, event.skillId());
-            log.info("Confirm skill {} for project {}", event.skillId(), event.projectId());
-        } else log.info("Not confirm skill {} for project {}", event.skillId(), event.projectId());
+        for (SkillVerificationResult s : event.results()) {
+            if (s.confirmed()) {
+                projectSkillService.confirmProjectSkill(s.projectSkillId());
+                log.info("Confirm skill {} for project {}", s.projectSkillId(), event.projectId());
+            } else {
+                log.info("Not confirm skill {} for project {}", s.projectSkillId(), event.projectId());
+            }
+        }
     }
 
     @Override

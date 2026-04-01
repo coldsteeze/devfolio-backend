@@ -12,7 +12,7 @@ public interface ProjectSkillRepository extends JpaRepository<ProjectSkill, UUID
 
     Optional<ProjectSkill> findProjectSkillByProjectAndSkillId(Project project, UUID skillId);
 
-    List<ProjectSkill> findProjectSkillsByProject(Project project);
-
     Boolean existsByProjectAndSkillId(Project project, UUID skillId);
+
+    List<ProjectSkill> findByProjectId(UUID projectId);
 }

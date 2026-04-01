@@ -32,7 +32,7 @@ public interface ProjectService {
 
     void deleteSkillProject(UUID projectId, UUID skillId, UserPrincipal user);
 
-    VerificationResponse verifySkillProject(UUID projectId, UUID skillId, UserPrincipal user);
+    VerificationResponse verifySkillProject(UUID projectId, UserPrincipal user);
 
     void confirmSkillProject(ProjectSkillVerificationCompletedEvent event);
 
