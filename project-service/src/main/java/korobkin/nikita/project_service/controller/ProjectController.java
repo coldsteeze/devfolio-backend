@@ -73,14 +73,13 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{projectId}/skills/{skillId}/verify")
+    @PostMapping("/{projectId}/verifications")
     public ResponseEntity<VerificationResponse> verifySkillProject(
             @PathVariable("projectId") UUID projectId,
-            @PathVariable("skillId") UUID skillId,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         return ResponseEntity
                 .status(HttpStatus.ACCEPTED)
-                .body(projectService.verifySkillProject(projectId, skillId, currentUser));
+                .body(projectService.verifySkillProject(projectId, currentUser));
     }
 
     @GetMapping("/{projectId}/skills")
