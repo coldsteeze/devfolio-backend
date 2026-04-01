@@ -251,7 +251,8 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
                 .willReturn(okJson("""
             {
                 "id": "%s",
-                "name": "Java"
+                "name": "Java",
+                "category": "LANGUAGE"
             }
             """.formatted(skillId))));
 
@@ -371,15 +372,7 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
         ProjectSkill projectSkill = ProjectSkillFixtures.validProjectSkill(project, skillId);
         projectSkillRepository.save(projectSkill);
 
-        stubFor(WireMock.get(urlPathEqualTo("/api/skills/" + skillId))
-                .willReturn(okJson("""
-            {
-                "id": "%s",
-                "name": "Java"
-            }
-            """.formatted(skillId))));
-
-        mockMvc.perform(post("/api/projects/" + project.getId() + "/skills/" + skillId + "/verify")
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/verifications")
                         .with(auth(userId)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("VERIFICATION_REQUESTED"));
@@ -390,7 +383,7 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
         Project project = ProjectFixtures.validProject(userId);
         projectRepository.save(project);
 
-        mockMvc.perform(post("/api/projects/" + project.getId() + "/skills/" + skillId + "/verify")
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/verifications")
                         .with(auth(UUID.randomUUID())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_ACCESS_DENIED.name()))
@@ -399,7 +392,7 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void verifySkillProject_shouldReturnNotFound() throws Exception {
-        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/skills/" + skillId + "/verify")
+        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/verifications")
                         .with(auth(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_NOT_FOUND.name()))

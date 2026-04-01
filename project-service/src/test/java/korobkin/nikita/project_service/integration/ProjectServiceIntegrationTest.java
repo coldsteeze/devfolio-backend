@@ -4,6 +4,7 @@ import feign.FeignException;
 import feign.Request;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
+import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.client.SkillClient;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
@@ -12,6 +13,7 @@ import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
+import korobkin.nikita.project_service.entity.enums.SkillCategory;
 import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.fixtures.ProjectFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectRequestFixtures;
@@ -331,7 +333,7 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         Project project = createAndSaveProject();
 
         UUID skillId = UUID.randomUUID();
-        when(skillClient.getSkillById(skillId)).thenReturn(new SkillResponse(skillId, "Java"));
+        when(skillClient.getSkillById(skillId)).thenReturn(new SkillResponse(skillId, "Java", SkillCategory.LANGUAGE));
 
         ProjectSkillResponse projectSkillResponse = projectService.addSkillProject(
                 project.getId(),
@@ -388,7 +390,7 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         UUID skillId = UUID.randomUUID();
         when(skillClient.getSkillById(skillId)).thenThrow(new FeignException.NotFound(
                 "Not found",
-                Request.create(Request.HttpMethod.GET, "/skills/"+skillId, new HashMap<>(), null, null, null),
+                Request.create(Request.HttpMethod.GET, "/skills/" + skillId, new HashMap<>(), null, null, null),
                 null,
                 null
         ));
@@ -454,11 +456,10 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         UUID skillId = UUID.randomUUID();
         createAndSaveProjectSkill(project, skillId);
 
-        when(skillClient.getSkillById(skillId)).thenReturn(new SkillResponse(skillId, "Java"));
+        when(skillClient.getSkillById(skillId)).thenReturn(new SkillResponse(skillId, "Java", SkillCategory.LANGUAGE));
 
         VerificationResponse verificationResponse = projectService.verifySkillProject(
                 project.getId(),
-                skillId,
                 new UserPrincipal(userId)
         );
 
@@ -471,7 +472,6 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     void verifySkillProject_withInvalidId_shouldReturnNotFound() {
         assertThatThrownBy(() -> projectService.verifySkillProject(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
                 new UserPrincipal(userId)))
                 .isInstanceOf(ProjectNotFoundException.class)
                 .hasMessageContaining(ErrorCode.PROJECT_NOT_FOUND.message);
@@ -483,22 +483,9 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> projectService.verifySkillProject(
                 project.getId(),
-                UUID.randomUUID(),
                 new UserPrincipal(UUID.randomUUID())))
                 .isInstanceOf(ProjectAccessDeniedException.class)
                 .hasMessageContaining(ErrorCode.PROJECT_ACCESS_DENIED.message);
-    }
-
-    @Test
-    void verifySkillProject_withInvalidSkillId_shouldReturnNotFound() {
-        Project project = createAndSaveProject();
-
-        assertThatThrownBy(() -> projectService.verifySkillProject(
-                project.getId(),
-                UUID.randomUUID(),
-                new UserPrincipal(userId)))
-                .isInstanceOf(ProjectSkillNotFoundException.class)
-                .hasMessageContaining(ErrorCode.PROJECT_SKILL_NOT_FOUND.message);
     }
 
     @Test
@@ -510,9 +497,8 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
         projectService.confirmSkillProject(
                 new ProjectSkillVerificationCompletedEvent(
-                project.getId(),
-                skillId,
-                true)
+                        project.getId(),
+                        List.of(new SkillVerificationResult(projectSkill.getId(), true)))
         );
 
         assertThat(projectSkill.isConfirmed()).isTrue();
@@ -528,8 +514,7 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         projectService.confirmSkillProject(
                 new ProjectSkillVerificationCompletedEvent(
                         project.getId(),
-                        skillId,
-                        false)
+                        List.of(new SkillVerificationResult(skillId, false)))
         );
 
         assertThat(projectSkill.isConfirmed()).isFalse();
