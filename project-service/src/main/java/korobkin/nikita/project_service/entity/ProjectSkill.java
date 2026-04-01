@@ -1,6 +1,7 @@
 package korobkin.nikita.project_service.entity;
 
 import jakarta.persistence.*;
+import korobkin.nikita.project_service.entity.enums.SkillCategory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,13 @@ public class ProjectSkill {
 
     @Column(name = "skill_id", nullable = false)
     private UUID skillId;
+
+    @Column(name = "skill_name", nullable = false)
+    private String skillName;
+
+    @Column(name = "skill_category", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private SkillCategory skillCategory;
 
     @Column(name = "manually_added", nullable = false)
     private boolean manuallyAdded;
