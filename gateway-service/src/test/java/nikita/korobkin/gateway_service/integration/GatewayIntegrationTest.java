@@ -37,16 +37,19 @@ public class GatewayIntegrationTest {
     private static WireMockServer authWireMock;
     private static WireMockServer profileWireMock;
     private static WireMockServer skillWireMock;
+    private static WireMockServer projectWireMock;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         authWireMock = new WireMockServer(options().dynamicPort());
         profileWireMock = new WireMockServer(options().dynamicPort());
         skillWireMock = new WireMockServer(options().dynamicPort());
+        projectWireMock = new WireMockServer(options().dynamicPort());
 
         authWireMock.start();
         profileWireMock.start();
         skillWireMock.start();
+        projectWireMock.start();
 
         authWireMock.stubFor(post(urlEqualTo("/api/auth/login"))
                 .willReturn(aResponse()
@@ -63,6 +66,7 @@ public class GatewayIntegrationTest {
         registry.add("services.auth-service-uri", () -> "http://localhost:" + authWireMock.port());
         registry.add("services.user-profile-service-uri", () -> "http://localhost:" + profileWireMock.port());
         registry.add("services.skill-service-uri", () -> "http://localhost:" + skillWireMock.port());
+        registry.add("services.project-service-uri", () -> "http://localhost:" + projectWireMock.port());
     }
 
     @AfterAll
