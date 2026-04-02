@@ -21,6 +21,10 @@ public class GatewayConfig {
                         r -> r.path("/api/profiles/**").uri(uriProperties.getUserProfileServiceUri()))
                 .route("skill-service",
                         r -> r.path("/api/skills/**").uri(uriProperties.getSkillServiceUri()))
+                .route("project-service",
+                        r -> r.path("/api/projects/**").uri(uriProperties.getProjectServiceUri()))
+                .route("project-service-users",
+                        r -> r.path("/api/users/**").uri(uriProperties.getProjectServiceUri()))
                 .route("auth-service-docs",
                         r -> r.path("/v3/api-docs/auth")
                                 .filters(f -> f.rewritePath("/v3/api-docs/auth", "/v3/api-docs"))
@@ -33,6 +37,10 @@ public class GatewayConfig {
                         r -> r.path("/v3/api-docs/skill")
                                 .filters(f -> f.rewritePath("/v3/api-docs/skill", "/v3/api-docs"))
                                 .uri(uriProperties.getSkillServiceUri()))
+                .route("project-service-docs",
+                        r -> r.path("/v3/api-docs/project")
+                                .filters(f -> f.rewritePath("/v3/api-docs/project", "/v3/api-docs"))
+                                .uri(uriProperties.getProjectServiceUri()))
                 .build();
     }
 }
