@@ -1,7 +1,7 @@
 spring:
   datasource:
     url: jdbc:postgresql://user_profile_postgres:5432/${PROJECT_SERVICE_POSTGRES_DB}
-    username: ${PROECT_SERVICE_POSTGRES_USER}
+    username: ${PROJECT_SERVICE_POSTGRES_USER}
     password: ${PROJECT_SERVICE_POSTGRES_PASSWORD}
 
   kafka:
