@@ -1,5 +1,6 @@
 package korobkin.nikita.project_service.controller;
 
+import korobkin.nikita.project_service.docs.UserProjectControllerDocs;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.response.PagedResponse;
 import korobkin.nikita.project_service.dto.response.ProjectResponse;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
-public class UserProjectController {
+public class UserProjectController implements UserProjectControllerDocs {
 
     private final ProjectService projectService;
 

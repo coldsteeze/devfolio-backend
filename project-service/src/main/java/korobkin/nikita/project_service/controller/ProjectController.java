@@ -1,6 +1,7 @@
 package korobkin.nikita.project_service.controller;
 
 import jakarta.validation.Valid;
+import korobkin.nikita.project_service.docs.ProjectControllerDocs;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
@@ -21,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/projects")
-public class ProjectController {
+public class ProjectController implements ProjectControllerDocs {
 
     private final ProjectService projectService;
 
