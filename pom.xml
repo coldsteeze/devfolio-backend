@@ -16,6 +16,7 @@
         <module>common-events</module>
         <module>gateway-service</module>
         <module>skill-service</module>
+        <module>project-service</module>
     </modules>
 
     <properties>

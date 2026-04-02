@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5435/project_service
+    username: postgres
+    password: postgres
+
+  kafka:
+    bootstrap-servers: localhost:9094
+
+server:
+  port: 8084
+
+jwt:
+  secret: my-dev-secret
+  issuer: dev-issuer
+
+services:
+  skill-service:
+    url: http://localhost:8083

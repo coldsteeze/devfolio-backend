@@ -35,6 +35,18 @@ services:
     volumes:
       - skill_postgres_data:/var/lib/postgresql/data
 
+  project_postgres:
+    image: postgres:16-alpine
+    container_name: project_postgres
+    environment:
+      POSTGRES_USER: ${PROJECT_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PROJECT_SERVICE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${PROJECT_SERVICE_POSTGRES_DB}
+    ports:
+      - "5435:5432"
+    volumes:
+      - project_postgres_data:/var/lib/postgresql/data
+
   redis:
     image: redis:latest
     container_name: auth_redis
@@ -62,6 +74,15 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
 
   auth-service:
     build:
@@ -123,6 +144,25 @@ services:
     ports:
       - "8083:8080"
 
+  project-service:
+    build:
+      context: ./project-service
+    image: coldsteeze/project-service:latest
+    depends_on:
+      - project_postgres
+      - kafka
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      PROJECT_SERVICE_POSTGRES_USER: ${PROJECT_SERVICE_POSTGRES_USER}
+      PROJECT_SERVICE_POSTGRES_PASSWORD: ${PROJECT_SERVICE_POSTGRES_PASSWORD}
+      PROJECT_SERVICE_POSTGRES_DB: ${PROJECT_SERVICE_POSTGRES_DB}
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      SKILL_SERVICE_URL: ${SKILL_SERVICE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+    ports:
+      - "8084:8080"
+
   gateway-service:
     build:
       context: ./gateway-service
@@ -144,5 +184,6 @@ volumes:
   auth_postgres_data:
   user_profile_postgres_data:
   skill_postgres_data:
+  project_postgres_data:
   kafka_data:
     driver: local
