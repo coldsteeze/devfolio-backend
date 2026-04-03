@@ -17,6 +17,7 @@
         <module>gateway-service</module>
         <module>skill-service</module>
         <module>project-service</module>
+        <module>skill-verification-service</module>
     </modules>
 
     <properties>
