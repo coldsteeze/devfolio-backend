@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5436/skill_verification_service
+    username: postgres
+    password: postgres
+
+  kafka:
+    bootstrap-servers: localhost:9094
+
+server:
+  port: 8085
