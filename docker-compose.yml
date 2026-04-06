@@ -47,6 +47,18 @@ services:
     volumes:
       - project_postgres_data:/var/lib/postgresql/data
 
+  skill_verification_postgres:
+    image: postgres:16-alpine
+    container_name: skill_verification_postgres
+    environment:
+      POSTGRES_USER: ${SKILL_VERIFICATION_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SKILL_VERIFICATION_SERVICE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SKILL_VERIFICATION_SERVICE_POSTGRES_DB}
+    ports:
+      - "5436:5432"
+    volumes:
+      - skill_verification_postgres_data:/var/lib/postgresql/data
+
   redis:
     image: redis:latest
     container_name: auth_redis
@@ -77,7 +89,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
-      - "8080:8080"
+      - "8086:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
@@ -172,6 +184,7 @@ services:
       AUTH_SERVICE_URI: ${AUTH_SERVICE_URI}
       USER_PROFILE_SERVICE_URI: ${USER_PROFILE_SERVICE_URI}
       SKILL_SERVICE_URI: ${SKILL_SERVICE_URI}
+      PROJECT_SERVICE_URI: ${PROJECT_SERVICE_URI}
       FRONTEND_URL: ${FRONTEND_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
@@ -185,5 +198,6 @@ volumes:
   user_profile_postgres_data:
   skill_postgres_data:
   project_postgres_data:
+  skill_verification_postgres_data:
   kafka_data:
     driver: local
