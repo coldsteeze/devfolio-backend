@@ -48,7 +48,9 @@ public class VerificationService {
                 .flatMap(Optional::stream)
                 .toList();
 
-        repository.saveAll(result);
+        if (!result.isEmpty()) {
+            repository.saveAll(result);
+        }
 
         log.info("Verification completed: projectId={}, verifiedSkills={}",
                 event.projectId(), result.size());
