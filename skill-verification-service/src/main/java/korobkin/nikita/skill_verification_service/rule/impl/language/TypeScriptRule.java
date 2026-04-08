@@ -5,12 +5,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class JavaRule extends LanguageRule {
+public class TypeScriptRule extends LanguageRule {
 
-    public JavaRule() {
-        super("Java", List.of(
-                "pom.xml",
-                "build.gradle"
+    public TypeScriptRule() {
+        super("TypeScript", List.of(
+                "tsconfig.json"
         ));
     }
 }
