@@ -9,7 +9,5 @@ public interface ProjectData {
 
     Optional<String> getFileContent(String path);
 
-    List<String> findFilesByName(String name);
-
-    List<String> listDirectories();
+    List<String> getRootDirectories();
 }

@@ -8,6 +8,5 @@ public class GitHubContentResponse {
     private String name;
     private String path;
     private String type;
-    private String downloadUrl;
     private String content;
 }

@@ -13,7 +13,6 @@ public class GitHubRepositoryGateway implements RepositoryGateway {
 
     @Override
     public ProjectData load(String githubUrl) {
-
         RepoInfo repo = parse(githubUrl);
 
         return new GitHubProjectData(
