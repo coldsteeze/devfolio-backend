@@ -175,6 +175,20 @@ services:
     ports:
       - "8084:8080"
 
+  skill-verification-service:
+    build:
+      context: ./skill-verification-service
+    image: coldsteeze/skill-verification-service:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SKILL_SERVICE_POSTGRES_USER: ${SKILL_VERIFICATION_SERVICE_POSTGRES_USER}
+      SKILL_SERVICE_POSTGRES_PASSWORD: ${SKILL_VERIFICATION_SERVICE_POSTGRES_PASSWORD}
+      SKILL_SERVICE_POSTGRES_DB: ${SKILL_VERIFICATION_SERVICE_POSTGRES_DB}
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    ports:
+      - "0:8080"
+
   gateway-service:
     build:
       context: ./gateway-service
