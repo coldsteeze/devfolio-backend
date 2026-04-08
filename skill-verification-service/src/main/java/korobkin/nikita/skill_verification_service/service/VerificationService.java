@@ -12,15 +12,17 @@ import korobkin.nikita.skill_verification_service.model.ProjectData;
 import korobkin.nikita.skill_verification_service.repository.VerifiedSkillRepository;
 import korobkin.nikita.skill_verification_service.rule.RuleRegistry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VerificationService {
 
     private final RepositoryGateway gateway;
@@ -31,29 +33,34 @@ public class VerificationService {
 
     @Transactional
     public void verify(ProjectSkillVerificationRequestedEvent event) {
+        log.info("Start verification: projectId={}, skills={}",
+                event.projectId(), event.skills().size());
 
         ProjectData data = gateway.load(event.githubUrl());
 
         repository.deleteByProjectId(event.projectId());
 
-        List<VerifiedSkill> result = new ArrayList<>();
-
-        for (SkillShortInfo skill : event.skills()) {
-
-            registry.find(skill)
-                    .filter(rule -> rule.verify(skill, data))
-                    .ifPresent(rule -> result.add(map(skill, event)));
-        }
+        List<VerifiedSkill> result = event.skills().parallelStream()
+                .map(skill -> registry.find(skill)
+                        .filter(rule -> rule.verify(skill, data))
+                        .map(rule -> map(skill, event))
+                )
+                .flatMap(Optional::stream)
+                .toList();
 
         repository.saveAll(result);
 
-        List<SkillVerificationResult> skillVerificationResultList = result.stream()
-                .map(vs -> new SkillVerificationResult(vs.getProjectSkillId(), true))
-                .toList();
+        log.info("Verification completed: projectId={}, verifiedSkills={}",
+                event.projectId(), result.size());
 
         verificationProducer.sendSync(
                 kafkaTopicProperties.getProjectSkillVerificationCompleted(),
-                new ProjectSkillVerificationCompletedEvent(event.projectId(), skillVerificationResultList)
+                new ProjectSkillVerificationCompletedEvent(
+                        event.projectId(),
+                        result.stream()
+                                .map(vs -> new SkillVerificationResult(vs.getProjectSkillId(), true))
+                                .toList()
+                )
         );
     }
 

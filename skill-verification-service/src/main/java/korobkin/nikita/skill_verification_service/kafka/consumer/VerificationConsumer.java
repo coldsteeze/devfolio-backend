@@ -16,6 +16,9 @@ public class VerificationConsumer {
 
     @KafkaListener(topics = "#{@kafkaTopicProperties.projectSkillVerificationRequested}")
     public void handle(ProjectSkillVerificationRequestedEvent event) {
+        log.info("Received verification request: projectId={}, skills={}",
+                event.projectId(), event.skills().size());
+
         service.verify(event);
     }
 }
