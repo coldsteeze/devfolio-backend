@@ -28,6 +28,3 @@ app:
     topics:
       project-skill-verification-requested: project.skill.verification.requested
       project-skill-verification-completed: project.skill.verification.completed
-
-github:
-  token:

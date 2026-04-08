@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://skill-verification_postgres:5432/${SKILL_VERIFICATION_SERVICE_POSTGRES_DB}
+    username: ${SKILL_VERIFICATION_SERVICE_POSTGRES_USER}
+    password: ${SKILL_VERIFICATION_SERVICE_POSTGRES_PASSWORD}
+
+  kafka:
+    bootstrap-servers: ${BOOTSTRAP_SERVERS}
+
+github:
+  token: ${GITHUB_TOKEN}
