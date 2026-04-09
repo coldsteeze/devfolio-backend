@@ -59,6 +59,18 @@ services:
     volumes:
       - skill_verification_postgres_data:/var/lib/postgresql/data
 
+  portfolio_postgres:
+    image: postgres:16-alpine
+    container_name: portfolio_postgres
+    environment:
+      POSTGRES_USER: ${PORTFOLIO_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PORTFOLIO_SERVICE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${PORTFOLIO_SERVICE_POSTGRES_DB}
+    ports:
+      - "5437:5432"
+    volumes:
+      - portfolio_postgres_data:/var/lib/postgresql/data
+
   redis:
     image: redis:latest
     container_name: auth_redis
@@ -189,6 +201,24 @@ services:
     ports:
       - "0:8080"
 
+  portfolio-service:
+    build:
+      context: ./portfolio-service
+    image: coldsteeze/portfolio-service:latest
+    depends_on:
+      - portfolio_postgres
+      - kafka
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      PORTFOLIO_SERVICE_POSTGRES_USER: ${PORTFOLIO_SERVICE_POSTGRES_USER}
+      PORTFOLIO_SERVICE_POSTGRES_PASSWORD: ${PORTFOLIO_SERVICE_POSTGRES_PASSWORD}
+      PORTFOLIO_SERVICE_POSTGRES_DB: ${PORTFOLIO_SERVICE_POSTGRES_DB}
+      BOOTSTRAP_SERVERS: ${BOOTSTRAP_SERVERS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+    ports:
+      - "8085:8080"
+
   gateway-service:
     build:
       context: ./gateway-service
@@ -213,5 +243,6 @@ volumes:
   skill_postgres_data:
   project_postgres_data:
   skill_verification_postgres_data:
+  portfolio_postgres_data:
   kafka_data:
     driver: local
