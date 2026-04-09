@@ -1,5 +1,6 @@
 package korobkin.nikita.user_profile_service.mapper;
 
+import korobkin.nikita.events.UserProfileUpdatedEvent;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
@@ -17,4 +18,6 @@ public interface UserProfileMapper {
     @Mapping(source = "skills", target = "skills")
     @Mapping(source = "links", target = "links")
     void updateEntityFromDto(UpdateUserProfileRequest request, @MappingTarget UserProfile user);
+
+    UserProfileUpdatedEvent toUpdatedEvent(UserProfile userProfile);
 }

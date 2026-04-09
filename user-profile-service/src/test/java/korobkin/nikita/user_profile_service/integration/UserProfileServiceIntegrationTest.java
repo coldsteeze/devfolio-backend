@@ -9,7 +9,7 @@ import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenExcept
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
-import korobkin.nikita.user_profile_service.kafka.producer.UserEventProducer;
+import korobkin.nikita.user_profile_service.kafka.producer.UserProfileDeletedEventProducer;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
     private UserProfileRepository userProfileRepository;
 
     @MockitoBean
-    UserEventProducer producer;
+    UserProfileDeletedEventProducer producer;
 
     @Test
     void getProfile_success() {

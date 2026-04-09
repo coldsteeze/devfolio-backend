@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UserEventProducer {
+public class UserProfileDeletedEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopicProperties topics;
