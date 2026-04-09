@@ -18,11 +18,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "korobkin.nikita.events"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 app:
   kafka:
     topics:
-      project-skill-verification-completed: project.skill.verification.completed
+      user-deleted: user-deleted
