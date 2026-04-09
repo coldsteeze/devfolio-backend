@@ -23,3 +23,4 @@ app:
   kafka:
     topics:
       user-deleted: user-deleted
+      user-profile-updated: user-profile-updated
