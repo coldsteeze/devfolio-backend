@@ -13,4 +13,5 @@ public class KafkaTopicProperties {
 
     private String userCreated;
     private String userDeleted;
+    private String userProfileUpdated;
 }
