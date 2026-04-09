@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5437/portfolio_service
+    username: postgres
+    password: postgres
+
+  kafka:
+    bootstrap-servers: localhost:9094
+
+server:
+  port: 8086
