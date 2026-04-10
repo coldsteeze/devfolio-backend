@@ -25,3 +25,4 @@ app:
       project-skill-verification-completed: project.skill.verification.completed
       project-created: project-created
       project-updated: project-updated
+      project-deleted: project-deleted
