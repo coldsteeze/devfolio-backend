@@ -1,6 +1,7 @@
 package korobkin.nikita.project_service.service.impl;
 
 import feign.FeignException;
+import korobkin.nikita.events.ProjectSkillRemovedEvent;
 import korobkin.nikita.project_service.client.SkillClient;
 import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
@@ -11,6 +12,7 @@ import korobkin.nikita.project_service.exception.ProjectSkillAlreadyExistsExcept
 import korobkin.nikita.project_service.exception.ProjectSkillNotFoundException;
 import korobkin.nikita.project_service.exception.SkillNotFoundException;
 import korobkin.nikita.project_service.kafka.producer.ProjectSkillAddedEventProducer;
+import korobkin.nikita.project_service.kafka.producer.ProjectSkillRemovedEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
 import korobkin.nikita.project_service.service.ProjectSkillService;
@@ -31,6 +33,7 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
     private final ProjectSkillMapper projectSkillMapper;
     private final SkillClient skillClient;
     private final ProjectSkillAddedEventProducer projectSkillAddedEventProducer;
+    private final ProjectSkillRemovedEventProducer projectSkillRemovedEventProducer;
 
     @Override
     public ProjectSkillResponse addForProject(Project project, UUID skillId, boolean manuallyAdded) {
@@ -66,6 +69,10 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
 
         projectSkillRepository.delete(projectSkill);
         log.info("Successfully delete skill for project with id {}", project.getId());
+
+        projectSkillRemovedEventProducer.sendProjectSkillRemoved(
+                new ProjectSkillRemovedEvent(projectSkill.getProject().getId(), projectSkill.getSkillName())
+        );
     }
 
     @Override

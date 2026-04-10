@@ -27,3 +27,4 @@ app:
       project-updated: project-updated
       project-deleted: project-deleted
       project-skill-added: project-skill-added
+      project-skill-removed: project-skill-removed
