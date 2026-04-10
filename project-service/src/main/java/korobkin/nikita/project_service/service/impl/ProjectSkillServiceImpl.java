@@ -10,6 +10,7 @@ import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectSkillAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectSkillNotFoundException;
 import korobkin.nikita.project_service.exception.SkillNotFoundException;
+import korobkin.nikita.project_service.kafka.producer.ProjectSkillAddedEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
 import korobkin.nikita.project_service.service.ProjectSkillService;
@@ -29,6 +30,7 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
     private final ProjectSkillRepository projectSkillRepository;
     private final ProjectSkillMapper projectSkillMapper;
     private final SkillClient skillClient;
+    private final ProjectSkillAddedEventProducer projectSkillAddedEventProducer;
 
     @Override
     public ProjectSkillResponse addForProject(Project project, UUID skillId, boolean manuallyAdded) {
@@ -44,6 +46,10 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
 
             projectSkillRepository.saveAndFlush(projectSkill);
             log.info("Project skill with id {} saved in repository", projectSkill.getId());
+
+            projectSkillAddedEventProducer.sendProjectSkillAdded(
+                    projectSkillMapper.toProjectSkillAddedEvent(projectSkill)
+            );
 
             return projectSkillMapper.toDto(projectSkill);
         } catch (FeignException.NotFound ex) {

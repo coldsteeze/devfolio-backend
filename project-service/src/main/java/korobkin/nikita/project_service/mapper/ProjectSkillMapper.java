@@ -1,5 +1,6 @@
 package korobkin.nikita.project_service.mapper;
 
+import korobkin.nikita.events.ProjectSkillAddedEvent;
 import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.ProjectSkill;
@@ -20,4 +21,7 @@ public interface ProjectSkillMapper {
     @Mapping(target = "skillName", source = "name")
     @Mapping(target = "skillCategory", source = "category")
     ProjectSkill toEntity(SkillResponse response);
+
+    @Mapping(target = "projectId", source = "project.id")
+    ProjectSkillAddedEvent toProjectSkillAddedEvent(ProjectSkill projectSkill);
 }
