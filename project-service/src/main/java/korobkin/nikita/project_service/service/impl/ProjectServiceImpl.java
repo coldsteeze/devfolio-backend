@@ -15,6 +15,7 @@ import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
 import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
 import korobkin.nikita.project_service.kafka.producer.ProjectCreatedEventProducer;
+import korobkin.nikita.project_service.kafka.producer.ProjectUpdatedEventProducer;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
@@ -46,6 +47,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final SkillEventProducer skillEventProducer;
     private final SkillEventMapper skillEventMapper;
     private final ProjectCreatedEventProducer projectCreatedEventProducer;
+    private final ProjectUpdatedEventProducer projectUpdatedEventProducer;
 
     @Override
     @Transactional
@@ -82,6 +84,8 @@ public class ProjectServiceImpl implements ProjectService {
         projectMapper.updateEntityFromDto(request, project);
         project.setUpdatedAt(LocalDateTime.now());
         log.info("Project with id {} updated successfully", project.getId());
+
+        projectUpdatedEventProducer.sendProjectUpdated(projectMapper.toProjectUpdatedEvent(project));
 
         return projectMapper.toDto(project);
     }

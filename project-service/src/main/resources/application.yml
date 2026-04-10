@@ -24,3 +24,4 @@ app:
       project-skill-verification-requested: project.skill.verification.requested
       project-skill-verification-completed: project.skill.verification.completed
       project-created: project-created
+      project-updated: project-updated
