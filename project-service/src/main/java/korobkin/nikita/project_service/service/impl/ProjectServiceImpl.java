@@ -1,6 +1,7 @@
 package korobkin.nikita.project_service.service.impl;
 
 import jakarta.persistence.criteria.Predicate;
+import korobkin.nikita.events.ProjectDeletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
 import korobkin.nikita.events.skill.SkillVerificationResult;
@@ -14,6 +15,9 @@ import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
 import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
+import korobkin.nikita.project_service.kafka.producer.ProjectCreatedEventProducer;
+import korobkin.nikita.project_service.kafka.producer.ProjectDeletedEventProducer;
+import korobkin.nikita.project_service.kafka.producer.ProjectUpdatedEventProducer;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
@@ -44,6 +48,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectSkillService projectSkillService;
     private final SkillEventProducer skillEventProducer;
     private final SkillEventMapper skillEventMapper;
+    private final ProjectCreatedEventProducer projectCreatedEventProducer;
+    private final ProjectUpdatedEventProducer projectUpdatedEventProducer;
+    private final ProjectDeletedEventProducer projectDeletedEventProducer;
 
     @Override
     @Transactional
@@ -62,6 +69,8 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
         log.info("Project with id {} saved in repository", project.getId());
 
+        projectCreatedEventProducer.sendProjectCreated(projectMapper.toProjectCreatedEvent(project));
+
         return projectMapper.toDto(project);
     }
 
@@ -78,6 +87,8 @@ public class ProjectServiceImpl implements ProjectService {
         projectMapper.updateEntityFromDto(request, project);
         project.setUpdatedAt(LocalDateTime.now());
         log.info("Project with id {} updated successfully", project.getId());
+
+        projectUpdatedEventProducer.sendProjectUpdated(projectMapper.toProjectUpdatedEvent(project));
 
         return projectMapper.toDto(project);
     }
@@ -128,9 +139,10 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
 
+        projectRepository.delete(project);
         log.info("Successfully delete project with id {}", projectId);
 
-        projectRepository.delete(project);
+        projectDeletedEventProducer.sendProjectDeleted(new ProjectDeletedEvent(projectId));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package korobkin.nikita.project_service.mapper;
 
+import korobkin.nikita.events.ProjectCreatedEvent;
+import korobkin.nikita.events.ProjectUpdatedEvent;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.PagedResponse;
 import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
@@ -25,4 +27,10 @@ public interface ProjectMapper {
     @Mapping(target = "project", source = "project")
     @Mapping(target = "skills", source = "skills")
     ProjectDetailsResponse toDetailsDto(Project project);
+
+    @Mapping(target = "projectId", source = "id")
+    ProjectCreatedEvent toProjectCreatedEvent(Project project);
+
+    @Mapping(target = "projectId", source = "id")
+    ProjectUpdatedEvent toProjectUpdatedEvent(Project project);
 }

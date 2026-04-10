@@ -23,3 +23,8 @@ app:
     topics:
       project-skill-verification-requested: project.skill.verification.requested
       project-skill-verification-completed: project.skill.verification.completed
+      project-created: project-created
+      project-updated: project-updated
+      project-deleted: project-deleted
+      project-skill-added: project-skill-added
+      project-skill-removed: project-skill-removed
