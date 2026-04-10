@@ -8,6 +8,6 @@ public record ProjectCreatedEvent(
         String name,
         String description,
         String githubUrl,
-        boolean isPublic
+        boolean projectPublic
 ) {
 }
