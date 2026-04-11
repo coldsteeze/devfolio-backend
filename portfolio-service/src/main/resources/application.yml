@@ -25,3 +25,4 @@ app:
       user-deleted: user-deleted
       user-profile-updated: user-profile-updated
       project-created: project-created
+      project-updated: project-updated
