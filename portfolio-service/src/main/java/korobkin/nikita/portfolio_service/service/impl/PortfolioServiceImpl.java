@@ -1,9 +1,6 @@
 package korobkin.nikita.portfolio_service.service.impl;
 
-import korobkin.nikita.events.ProjectCreatedEvent;
-import korobkin.nikita.events.ProjectUpdatedEvent;
-import korobkin.nikita.events.UserDeletedEvent;
-import korobkin.nikita.events.UserProfileUpdatedEvent;
+import korobkin.nikita.events.*;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import korobkin.nikita.portfolio_service.entity.PortfolioProject;
 import korobkin.nikita.portfolio_service.mapper.PortfolioMapper;
@@ -109,5 +106,28 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioProjectMapper.updateEntityFromEvent(event, existing);
 
         log.info("Updated portfolio project: {}", event.projectId());
+    }
+
+    @Override
+    @Transactional
+    public void deletePortfolioProject(ProjectDeletedEvent event) {
+        PortfolioProject existing = portfolioProjectRepository
+                .findById(event.projectId())
+                .orElse(null);
+
+        if (existing == null) {
+            log.warn("Portfolio project not found: {}", event.projectId());
+            return;
+        }
+
+        Portfolio portfolio = existing.getPortfolio();
+
+        portfolioProjectRepository.delete(existing);
+
+        portfolio.setTotalProjects(
+                (short) Math.max(0, portfolio.getTotalProjects() - 1)
+        );
+
+        log.info("Deleted portfolio project: {}", event.projectId());
     }
 }

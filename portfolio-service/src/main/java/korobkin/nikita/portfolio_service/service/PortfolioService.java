@@ -1,9 +1,6 @@
 package korobkin.nikita.portfolio_service.service;
 
-import korobkin.nikita.events.ProjectCreatedEvent;
-import korobkin.nikita.events.ProjectUpdatedEvent;
-import korobkin.nikita.events.UserDeletedEvent;
-import korobkin.nikita.events.UserProfileUpdatedEvent;
+import korobkin.nikita.events.*;
 
 public interface PortfolioService {
 
@@ -14,4 +11,6 @@ public interface PortfolioService {
     void createPortfolioProject(ProjectCreatedEvent event);
 
     void updatePortfolioProject(ProjectUpdatedEvent event);
+
+    void deletePortfolioProject(ProjectDeletedEvent event);
 }
