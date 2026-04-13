@@ -1,9 +1,7 @@
 package korobkin.nikita.project_service.service.impl;
 
 import jakarta.persistence.criteria.Predicate;
-import korobkin.nikita.events.ProjectDeletedEvent;
-import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
-import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
+import korobkin.nikita.events.*;
 import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
@@ -15,11 +13,9 @@ import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
 import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectNotFoundException;
-import korobkin.nikita.project_service.kafka.producer.ProjectCreatedEventProducer;
-import korobkin.nikita.project_service.kafka.producer.ProjectDeletedEventProducer;
-import korobkin.nikita.project_service.kafka.producer.ProjectUpdatedEventProducer;
-import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
+import korobkin.nikita.project_service.kafka.producer.*;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
+import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
@@ -51,6 +47,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectCreatedEventProducer projectCreatedEventProducer;
     private final ProjectUpdatedEventProducer projectUpdatedEventProducer;
     private final ProjectDeletedEventProducer projectDeletedEventProducer;
+    private final ProjectSkillsUpdatedEventProducer projectSkillsUpdatedEventProducer;
+    private final ProjectSkillMapper projectSkillMapper;
 
     @Override
     @Transactional
@@ -196,7 +194,10 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void confirmSkillProject(ProjectSkillVerificationCompletedEvent event) {
-        if (!projectRepository.existsById(event.projectId())) {
+        Project project = projectRepository.findById(event.projectId())
+                .orElse(null);
+
+        if (project == null) {
             log.warn("Project {} not found, skipping verification result", event.projectId());
             return;
         }
@@ -204,11 +205,17 @@ public class ProjectServiceImpl implements ProjectService {
         for (SkillVerificationResult s : event.results()) {
             if (s.confirmed()) {
                 projectSkillService.confirmProjectSkill(s.projectSkillId());
-                log.info("Confirm skill {} for project {}", s.projectSkillId(), event.projectId());
-            } else {
-                log.info("Not confirm skill {} for project {}", s.projectSkillId(), event.projectId());
             }
         }
+
+        List<ProjectSkillDto> skills = projectSkillMapper.toProjectSkillDto(project.getSkills());
+
+        ProjectSkillsUpdatedEvent updatedEvent = new ProjectSkillsUpdatedEvent(
+                project.getId(),
+                skills
+        );
+
+        projectSkillsUpdatedEventProducer.sendProjectSkillsUpdated(updatedEvent);
     }
 
     @Override
