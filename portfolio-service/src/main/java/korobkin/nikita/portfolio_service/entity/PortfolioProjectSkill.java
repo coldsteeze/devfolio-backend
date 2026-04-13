@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
+
 @Embeddable
 @Getter
 @Setter
@@ -26,4 +28,16 @@ public class PortfolioProjectSkill {
 
     @Column(name = "confirmed")
     private boolean confirmed;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        PortfolioProjectSkill that = (PortfolioProjectSkill) o;
+        return Objects.equals(skillName, that.skillName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(skillName);
+    }
 }

@@ -13,4 +13,6 @@ public interface PortfolioService {
     void updatePortfolioProject(ProjectUpdatedEvent event);
 
     void deletePortfolioProject(ProjectDeletedEvent event);
+
+    void addPortfolioProjectSkill(ProjectSkillAddedEvent event);
 }

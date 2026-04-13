@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -43,5 +43,5 @@ public class PortfolioProject {
             name = "portfolio_project_skills",
             joinColumns = @JoinColumn(name = "portfolio_project_id")
     )
-    private List<PortfolioProjectSkill> skills = new ArrayList<>();
+    private Set<PortfolioProjectSkill> skills = new HashSet<>();
 }

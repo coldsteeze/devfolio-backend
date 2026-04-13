@@ -3,8 +3,10 @@ package korobkin.nikita.portfolio_service.service.impl;
 import korobkin.nikita.events.*;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import korobkin.nikita.portfolio_service.entity.PortfolioProject;
+import korobkin.nikita.portfolio_service.entity.PortfolioProjectSkill;
 import korobkin.nikita.portfolio_service.mapper.PortfolioMapper;
 import korobkin.nikita.portfolio_service.mapper.PortfolioProjectMapper;
+import korobkin.nikita.portfolio_service.mapper.PortfolioProjectSkillMapper;
 import korobkin.nikita.portfolio_service.repository.PortfolioProjectRepository;
 import korobkin.nikita.portfolio_service.repository.PortfolioRepository;
 import korobkin.nikita.portfolio_service.service.PortfolioService;
@@ -22,6 +24,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final PortfolioProjectRepository portfolioProjectRepository;
     private final PortfolioMapper portfolioMapper;
     private final PortfolioProjectMapper portfolioProjectMapper;
+    private final PortfolioProjectSkillMapper portfolioProjectSkillMapper;
 
     @Override
     @Transactional
@@ -129,5 +132,23 @@ public class PortfolioServiceImpl implements PortfolioService {
         );
 
         log.info("Deleted portfolio project: {}", event.projectId());
+    }
+
+    @Override
+    @Transactional
+    public void addPortfolioProjectSkill(ProjectSkillAddedEvent event) {
+        PortfolioProject existing = portfolioProjectRepository
+                .findById(event.projectId())
+                .orElse(null);
+
+        if (existing == null) {
+            log.warn("Portfolio project not found: {}", event.projectId());
+            return;
+        }
+
+        PortfolioProjectSkill projectSkill = portfolioProjectSkillMapper.toEntity(event);
+        existing.getSkills().add(projectSkill);
+
+        log.info("Add portfolio project skill {} in project: {}", event.skillName(), event.projectId());
     }
 }
