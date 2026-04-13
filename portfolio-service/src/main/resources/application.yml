@@ -27,3 +27,4 @@ app:
       project-created: project-created
       project-updated: project-updated
       project-deleted: project-deleted
+      project-skill-added: project-skill-added
