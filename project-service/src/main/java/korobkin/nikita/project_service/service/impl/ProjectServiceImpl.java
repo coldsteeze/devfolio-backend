@@ -202,6 +202,8 @@ public class ProjectServiceImpl implements ProjectService {
             return;
         }
 
+        project.getSkills().forEach(skill -> skill.setConfirmed(false));
+
         for (SkillVerificationResult s : event.results()) {
             if (s.confirmed()) {
                 projectSkillService.confirmProjectSkill(s.projectSkillId());
