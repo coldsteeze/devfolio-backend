@@ -151,4 +151,23 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         log.info("Add portfolio project skill {} in project: {}", event.skillName(), event.projectId());
     }
+
+    @Override
+    @Transactional
+    public void deletePortfolioProjectSkill(ProjectSkillRemovedEvent event) {
+        PortfolioProject existing = portfolioProjectRepository
+                .findById(event.projectId())
+                .orElse(null);
+
+        if (existing == null) {
+            log.warn("Portfolio project not found: {}", event.projectId());
+            return;
+        }
+
+        existing.getSkills().remove(
+                new PortfolioProjectSkill(event.name(), null, false)
+        );
+
+        log.info("Remove portfolio project skill {} in project: {}", event.name(), event.projectId());
+    }
 }
