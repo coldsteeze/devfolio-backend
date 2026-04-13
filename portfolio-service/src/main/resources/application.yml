@@ -29,3 +29,4 @@ app:
       project-deleted: project-deleted
       project-skill-added: project-skill-added
       project-skill-removed: project-skill-removed
+      project-skills-updated: project-skills-updated
