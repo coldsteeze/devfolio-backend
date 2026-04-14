@@ -1,6 +1,7 @@
 package korobkin.nikita.portfolio_service.service.impl;
 
 import korobkin.nikita.events.*;
+import korobkin.nikita.portfolio_service.dto.PortfolioResponse;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import korobkin.nikita.portfolio_service.entity.PortfolioProject;
 import korobkin.nikita.portfolio_service.entity.PortfolioProjectSkill;
@@ -9,6 +10,7 @@ import korobkin.nikita.portfolio_service.mapper.PortfolioProjectMapper;
 import korobkin.nikita.portfolio_service.mapper.PortfolioProjectSkillMapper;
 import korobkin.nikita.portfolio_service.repository.PortfolioProjectRepository;
 import korobkin.nikita.portfolio_service.repository.PortfolioRepository;
+import korobkin.nikita.portfolio_service.security.user.UserPrincipal;
 import korobkin.nikita.portfolio_service.service.PortfolioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -202,5 +205,23 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
 
         log.info("Updated skill confirmations for project {}", event.projectId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PortfolioResponse getPortfolio(UUID userId) {
+        Portfolio portfolio = portfolioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Portfolio not found"));
+
+        return portfolioMapper.toResponse(portfolio);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PortfolioResponse getMyPortfolio(UserPrincipal currentUser) {
+        Portfolio portfolio = portfolioRepository.findById(currentUser.userId())
+                .orElseThrow(() -> new RuntimeException("Portfolio not found"));
+
+        return portfolioMapper.toResponse(portfolio);
     }
 }
