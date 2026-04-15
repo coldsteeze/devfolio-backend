@@ -12,12 +12,6 @@ public interface PortfolioService {
 
     void createPortfolio(UserProfileUpdatedEvent event);
 
-    void addPortfolioProjectSkill(ProjectSkillAddedEvent event);
-
-    void deletePortfolioProjectSkill(ProjectSkillRemovedEvent event);
-
-    void updatePortfolioProjectSkill(ProjectSkillsUpdatedEvent event);
-
     PortfolioResponse getPortfolio(UUID userId);
 
     PortfolioResponse getMyPortfolio(UserPrincipal currentUser);
