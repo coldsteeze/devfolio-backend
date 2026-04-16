@@ -1,14 +1,12 @@
 package korobkin.nikita.portfolio_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import korobkin.nikita.events.ProjectSkillDto;
+import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "portfolio_projects")
@@ -44,4 +42,33 @@ public class PortfolioProject {
             joinColumns = @JoinColumn(name = "portfolio_project_id")
     )
     private Set<PortfolioProjectSkill> skills = new HashSet<>();
+
+    public void addSkill(PortfolioProjectSkill skill) {
+        if (skill == null) return;
+        skills.add(skill);
+    }
+
+    public void removeSkill(String skillName) {
+        if (skillName == null) return;
+
+        skills.removeIf(s -> s.getSkillName().equals(skillName));
+    }
+
+    public void updateSkills(List<ProjectSkillDto> dtos) {
+        if (dtos == null) return;
+
+        Map<String, PortfolioProjectSkill> map = skills.stream()
+                .collect(Collectors.toMap(
+                        PortfolioProjectSkill::getSkillName,
+                        Function.identity()
+                ));
+
+        for (ProjectSkillDto dto : dtos) {
+            PortfolioProjectSkill skill = map.get(dto.skillName());
+
+            if (skill != null) {
+                skill.confirm(dto.confirmed());
+            }
+        }
+    }
 }

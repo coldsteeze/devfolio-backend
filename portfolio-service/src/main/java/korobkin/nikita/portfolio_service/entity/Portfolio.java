@@ -44,4 +44,36 @@ public class Portfolio {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void addProject(PortfolioProject project) {
+        if (project == null) return;
+
+        if (containsProject(project.getProjectId())) {
+            return;
+        }
+
+        projects.add(project);
+        project.setPortfolio(this);
+
+        recalcProjects();
+    }
+
+    public void removeProject(UUID projectId) {
+        boolean removed = projects.removeIf(p -> p.getProjectId().equals(projectId));
+
+        if (!removed) {
+            return;
+        }
+
+        recalcProjects();
+    }
+
+    private boolean containsProject(UUID projectId) {
+        return projects.stream()
+                .anyMatch(p -> p.getProjectId().equals(projectId));
+    }
+
+    private void recalcProjects() {
+        this.totalProjects = (short) projects.size();
+    }
 }

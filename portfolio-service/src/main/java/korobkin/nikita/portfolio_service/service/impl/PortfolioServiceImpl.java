@@ -4,6 +4,8 @@ import korobkin.nikita.events.UserDeletedEvent;
 import korobkin.nikita.events.UserProfileUpdatedEvent;
 import korobkin.nikita.portfolio_service.dto.PortfolioResponse;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
+import korobkin.nikita.portfolio_service.exception.ErrorCode;
+import korobkin.nikita.portfolio_service.exception.PortfolioNotFoundException;
 import korobkin.nikita.portfolio_service.mapper.PortfolioMapper;
 import korobkin.nikita.portfolio_service.repository.PortfolioRepository;
 import korobkin.nikita.portfolio_service.security.user.UserPrincipal;
@@ -25,33 +27,34 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     @Transactional
-    public void deletePortfolio(UserDeletedEvent event) {
-        portfolioRepository.deleteById(event.userId());
-        log.info("Delete portfolio with userId: {}", event.userId());
+    public void createPortfolio(UserProfileUpdatedEvent event) {
+        portfolioRepository.save(portfolioMapper.toEntity(event));
+        log.info("Portfolio created: {}", event.userId());
     }
 
     @Override
     @Transactional
-    public void createPortfolio(UserProfileUpdatedEvent event) {
-        portfolioRepository.save(portfolioMapper.toEntity(event));
-        log.info("Save portfolio with userId: {}", event.userId());
+    public void deletePortfolio(UserDeletedEvent event) {
+        portfolioRepository.deleteById(event.userId());
+        log.info("Portfolio deleted: {}", event.userId());
     }
 
     @Override
     @Transactional(readOnly = true)
     public PortfolioResponse getPortfolio(UUID userId) {
-        Portfolio portfolio = portfolioRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Portfolio not found"));
-
-        return portfolioMapper.toResponse(portfolio);
+        return portfolioMapper.toResponse(getOrThrow(userId));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PortfolioResponse getMyPortfolio(UserPrincipal currentUser) {
-        Portfolio portfolio = portfolioRepository.findById(currentUser.userId())
-                .orElseThrow(() -> new RuntimeException("Portfolio not found"));
+    public PortfolioResponse getMyPortfolio(UserPrincipal user) {
+        return portfolioMapper.toResponse(getOrThrow(user.userId()));
+    }
 
-        return portfolioMapper.toResponse(portfolio);
+    private Portfolio getOrThrow(UUID userId) {
+        return portfolioRepository.findById(userId)
+                .orElseThrow(() -> new PortfolioNotFoundException(
+                        ErrorCode.PORTFOLIO_NOT_FOUND
+                ));
     }
 }

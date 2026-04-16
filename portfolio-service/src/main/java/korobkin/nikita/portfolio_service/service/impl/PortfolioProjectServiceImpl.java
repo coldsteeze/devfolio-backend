@@ -5,6 +5,8 @@ import korobkin.nikita.events.ProjectDeletedEvent;
 import korobkin.nikita.events.ProjectUpdatedEvent;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import korobkin.nikita.portfolio_service.entity.PortfolioProject;
+import korobkin.nikita.portfolio_service.exception.ErrorCode;
+import korobkin.nikita.portfolio_service.exception.PortfolioNotFoundException;
 import korobkin.nikita.portfolio_service.mapper.PortfolioProjectMapper;
 import korobkin.nikita.portfolio_service.repository.PortfolioProjectRepository;
 import korobkin.nikita.portfolio_service.repository.PortfolioRepository;
@@ -14,106 +16,77 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PortfolioProjectServiceImpl implements PortfolioProjectService {
 
     private final PortfolioRepository portfolioRepository;
-    private final PortfolioProjectRepository portfolioProjectRepository;
-    private final PortfolioProjectMapper portfolioProjectMapper;
+    private final PortfolioProjectRepository projectRepository;
+    private final PortfolioProjectMapper mapper;
 
     @Override
     @Transactional
     public void createPortfolioProject(ProjectCreatedEvent event) {
-        if (portfolioProjectRepository.existsById(event.projectId())) {
-            log.warn("Project already exists in portfolio: {}", event.projectId());
-            return;
-        }
+        if (!event.projectPublic()) return;
 
-        if (!event.projectPublic()) {
-            log.info("Skip non-public project: {}", event.projectId());
-            return;
-        }
+        if (projectRepository.existsById(event.projectId())) return;
 
-        Portfolio portfolio = portfolioRepository.findById(event.userId())
-                .orElse(null);
+        Portfolio portfolio = getPortfolio(event.userId());
 
-        if (portfolio == null) {
-            log.error("Portfolio not found for userId: {}", event.userId());
-            return;
-        }
+        PortfolioProject project = mapper.toEntity(event);
 
-        PortfolioProject portfolioProject = portfolioProjectMapper.toEntity(event);
-        portfolioProject.setPortfolio(portfolio);
+        portfolio.addProject(project);
 
-        portfolioProjectRepository.save(portfolioProject);
-
-        portfolio.setTotalProjects((short) (portfolio.getTotalProjects() + 1));
-
-        log.info("Saved portfolio project: {}", event.projectId());
+        log.info("Project created: {}", event.projectId());
     }
 
     @Override
     @Transactional
     public void updatePortfolioProject(ProjectUpdatedEvent event) {
-        PortfolioProject existing = portfolioProjectRepository
-                .findById(event.projectId())
-                .orElse(null);
-
-        Portfolio portfolio = portfolioRepository.findById(event.userId())
-                .orElse(null);
-
-        if (portfolio == null) {
-            log.error("Portfolio not found: {}", event.userId());
-            return;
-        }
+        Portfolio portfolio = getPortfolio(event.userId());
+        PortfolioProject existing = projectRepository.findById(event.projectId()).orElse(null);
 
         if (!event.projectPublic()) {
             if (existing != null) {
-                portfolioProjectRepository.delete(existing);
-                portfolio.setTotalProjects((short) Math.max(0, portfolio.getTotalProjects() - 1));
-                log.info("Deleted portfolio project: {}", event.projectId());
+                portfolio.removeProject(existing.getProjectId());
+                projectRepository.delete(existing);
             }
             return;
         }
 
         if (existing == null) {
-            PortfolioProject portfolioProject = portfolioProjectMapper.toEntity(event);
-            portfolioProject.setPortfolio(portfolio);
-
-            portfolioProjectRepository.save(portfolioProject);
-            portfolio.setTotalProjects((short) (portfolio.getTotalProjects() + 1));
-
-            log.info("Created portfolio project: {}", event.projectId());
+            PortfolioProject project = mapper.toEntity(event);
+            portfolio.addProject(project);
+            projectRepository.save(project);
             return;
         }
 
-        portfolioProjectMapper.updateEntityFromEvent(event, existing);
-
-        log.info("Updated portfolio project: {}", event.projectId());
+        mapper.updateEntityFromEvent(event, existing);
     }
 
     @Override
     @Transactional
     public void deletePortfolioProject(ProjectDeletedEvent event) {
-        PortfolioProject existing = portfolioProjectRepository
-                .findById(event.projectId())
-                .orElse(null);
+        PortfolioProject project = projectRepository.findById(event.projectId()).orElse(null);
 
-        if (existing == null) {
-            log.warn("Portfolio project not found: {}", event.projectId());
-            return;
-        }
+        if (project == null) return;
 
-        Portfolio portfolio = existing.getPortfolio();
+        Portfolio portfolio = project.getPortfolio();
 
-        portfolioProjectRepository.delete(existing);
+        portfolio.removeProject(project.getProjectId());
 
-        portfolio.setTotalProjects(
-                (short) Math.max(0, portfolio.getTotalProjects() - 1)
-        );
+        projectRepository.delete(project);
 
-        log.info("Deleted portfolio project: {}", event.projectId());
+        log.info("Project deleted: {}", event.projectId());
+    }
+
+    private Portfolio getPortfolio(UUID userId) {
+        return portfolioRepository.findById(userId)
+                .orElseThrow(() -> new PortfolioNotFoundException(
+                        ErrorCode.PORTFOLIO_NOT_FOUND
+                ));
     }
 }

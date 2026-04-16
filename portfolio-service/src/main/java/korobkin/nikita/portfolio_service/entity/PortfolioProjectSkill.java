@@ -40,4 +40,9 @@ public class PortfolioProjectSkill {
     public int hashCode() {
         return Objects.hashCode(skillName);
     }
+
+    public void confirm(boolean value) {
+        if (this.confirmed == value) return;
+        this.confirmed = value;
+    }
 }
