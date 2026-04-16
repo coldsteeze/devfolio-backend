@@ -8,7 +8,7 @@ spring:
     bootstrap-servers: localhost:9094
 
 server:
-  port: 8086
+  port: 8085
 
 jwt:
   secret: my-dev-secret
