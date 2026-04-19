@@ -15,4 +15,5 @@ public class UriProperties {
     private String userProfileServiceUri;
     private String skillServiceUri;
     private String projectServiceUri;
+    private String portfolioServiceUri;
 }

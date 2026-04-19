@@ -25,6 +25,8 @@ public class GatewayConfig {
                         r -> r.path("/api/projects/**").uri(uriProperties.getProjectServiceUri()))
                 .route("project-service-users",
                         r -> r.path("/api/users/**").uri(uriProperties.getProjectServiceUri()))
+                .route("portfolio-service",
+                        r -> r.path("/api/portfolios/**").uri(uriProperties.getPortfolioServiceUri()))
                 .route("auth-service-docs",
                         r -> r.path("/v3/api-docs/auth")
                                 .filters(f -> f.rewritePath("/v3/api-docs/auth", "/v3/api-docs"))
@@ -41,6 +43,10 @@ public class GatewayConfig {
                         r -> r.path("/v3/api-docs/project")
                                 .filters(f -> f.rewritePath("/v3/api-docs/project", "/v3/api-docs"))
                                 .uri(uriProperties.getProjectServiceUri()))
+                .route("portfolio-service-docs",
+                        r -> r.path("/v3/api-docs/portfolio")
+                                .filters(f -> f.rewritePath("/v3/api-docs/portfolio", "/v3/api-docs"))
+                                .uri(uriProperties.getPortfolioServiceUri()))
                 .build();
     }
 }
