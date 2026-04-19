@@ -3,6 +3,7 @@ services:
   user-profile-service-uri: ${USER_PROFILE_SERVICE_URI}
   skill-service-uri: ${SKILL_SERVICE_URI}
   project-service-uri: ${PROJECT_SERVICE_URI}
+  portfolio-service-uri: ${PORTFOLIO_SERVICE_URI}
 
 cors:
     frontend-url: ${FRONTEND_URL}

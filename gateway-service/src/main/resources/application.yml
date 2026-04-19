@@ -13,4 +13,6 @@ springdoc:
         url: /v3/api-docs/skill
       - name: project-service
         url: /v3/api-docs/project
+      - name: portfolio-service
+        url: /v3/api-docs/portfolio
 
