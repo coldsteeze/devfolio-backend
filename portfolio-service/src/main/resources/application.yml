@@ -1,0 +1,32 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+
+  kafka:
+    consumer:
+      group-id: portfolio-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "korobkin.nikita.events"
+
+app:
+  kafka:
+    topics:
+      user-deleted: user-deleted
+      user-profile-updated: user-profile-updated
+      project-created: project-created
+      project-updated: project-updated
+      project-deleted: project-deleted
+      project-skill-added: project-skill-added
+      project-skill-removed: project-skill-removed
+      project-skills-updated: project-skills-updated
