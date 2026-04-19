@@ -32,13 +32,15 @@ public class PortfolioProjectServiceImpl implements PortfolioProjectService {
     public void createPortfolioProject(ProjectCreatedEvent event) {
         if (!event.projectPublic()) return;
 
-        if (projectRepository.existsById(event.projectId())) return;
-
         Portfolio portfolio = getPortfolio(event.userId());
+
+        if (projectRepository.existsById(event.projectId())) return;
 
         PortfolioProject project = mapper.toEntity(event);
 
         portfolio.addProject(project);
+
+        portfolioRepository.save(portfolio);
 
         log.info("Project created: {}", event.projectId());
     }
