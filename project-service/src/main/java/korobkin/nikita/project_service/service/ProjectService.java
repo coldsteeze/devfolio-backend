@@ -37,4 +37,6 @@ public interface ProjectService {
     void confirmSkillProject(ProjectSkillVerificationCompletedEvent event);
 
     List<ProjectSkillResponse> getProjectSkills(UUID projectId, UserPrincipal user);
+
+    PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable);
 }

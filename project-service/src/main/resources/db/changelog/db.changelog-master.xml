@@ -8,4 +8,5 @@
 
     <include file="db/changelog/changes/001_create_projects_table.xml"/>
     <include file="db/changelog/changes/002_create_project_skills_table.xml"/>
+    <include file="db/changelog/changes/003_add_project_feed_fields.xml"/>
 </databaseChangeLog>

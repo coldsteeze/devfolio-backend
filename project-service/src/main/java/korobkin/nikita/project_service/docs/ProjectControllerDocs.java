@@ -9,12 +9,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
-import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
-import korobkin.nikita.project_service.dto.response.ProjectResponse;
-import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
-import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.exception.ApiError;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -468,5 +467,20 @@ public interface ProjectControllerDocs {
     ResponseEntity<List<ProjectSkillResponse>> getProjectSkills(
             @PathVariable UUID projectId,
             UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "Project feed",
+            description = "Project feed with a brief description and a photo of the project",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Projects fetched successfully",
+                            content = @Content(schema = @Schema(implementation = PagedResponse.class))
+                    )
+            }
+    )
+    ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
+            @ParameterObject Pageable pageable
     );
 }

@@ -235,6 +235,20 @@ public class ProjectServiceImpl implements ProjectService {
         return projectSkillService.getProjectSkills(project);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable) {
+        Page<ProjectFeedResponse> page = projectRepository.findFeed(pageable);
+
+        return new PagedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
         Specification<Project> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
