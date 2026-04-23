@@ -19,6 +19,7 @@
         <module>project-service</module>
         <module>skill-verification-service</module>
         <module>portfolio-service</module>
+        <module>media-service</module>
     </modules>
 
     <properties>
