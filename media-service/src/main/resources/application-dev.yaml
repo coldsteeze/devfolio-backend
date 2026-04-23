@@ -1,0 +1,5 @@
+minio:
+  url: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: devfolio-photos
