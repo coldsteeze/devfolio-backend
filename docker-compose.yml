@@ -111,11 +111,13 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD:  ${MINIO_SECRET_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
 
@@ -239,6 +241,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
     ports:
       - "8086:8080"
 
