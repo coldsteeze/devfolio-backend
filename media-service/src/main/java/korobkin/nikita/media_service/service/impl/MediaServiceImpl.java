@@ -57,9 +57,9 @@ public class MediaServiceImpl implements MediaService {
     public void delete(String url) {
         validateUrl(url);
 
-        try {
-            String objectName = extractObjectName(url);
+        String objectName = extractObjectName(url);
 
+        try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(minioProperties.getBucket())
