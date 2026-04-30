@@ -1,5 +1,6 @@
 package korobkin.nikita.media_service.controller;
 
+import korobkin.nikita.media_service.docs.MediaControllerDocs;
 import korobkin.nikita.media_service.dto.DeleteMediaRequest;
 import korobkin.nikita.media_service.dto.MediaResponse;
 import korobkin.nikita.media_service.service.MediaService;
@@ -13,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/media")
 @RequiredArgsConstructor
-public class MediaController {
+public class MediaController implements MediaControllerDocs {
 
     private final MediaService mediaService;
 
