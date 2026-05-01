@@ -47,7 +47,7 @@ class MediaServiceUnitTest {
     @Test
     void upload_shouldUploadFileSuccessfully() throws Exception {
         when(minioProperties.getBucket()).thenReturn(bucket);
-        when(minioProperties.getUrl()).thenReturn(baseUrl);
+        when(minioProperties.getPublicUrl()).thenReturn(baseUrl);
 
         when(mediaProperties.getAllowedTypes())
                 .thenReturn(List.of("image/png", "image/jpeg"));

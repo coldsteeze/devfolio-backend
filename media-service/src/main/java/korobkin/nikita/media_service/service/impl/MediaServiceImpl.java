@@ -43,7 +43,7 @@ public class MediaServiceImpl implements MediaService {
                             .build()
             );
 
-            return new MediaResponse(minioProperties.getUrl() + "/" +
+            return new MediaResponse(minioProperties.getPublicUrl() + "/" +
                     minioProperties.getBucket() + "/" +
                     objectName);
 
