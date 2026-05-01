@@ -101,12 +101,25 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
-      - "8086:8080"
+      - "8087:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
       - kafka
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
 
   auth-service:
     build:
@@ -219,6 +232,19 @@ services:
     ports:
       - "8085:8080"
 
+  media-service:
+    build:
+      context: ./media-service
+    image: coldsteeze/media-service:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+    ports:
+      - "8086:8080"
+
   gateway-service:
     build:
       context: ./gateway-service
@@ -245,5 +271,6 @@ volumes:
   project_postgres_data:
   skill_verification_postgres_data:
   portfolio_postgres_data:
+  minio_data:
   kafka_data:
     driver: local

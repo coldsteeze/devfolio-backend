@@ -1,0 +1,6 @@
+media:
+  max-file-size: 5MB
+  allowed-types:
+    - image/jpeg
+    - image/png
+    - image/webp
