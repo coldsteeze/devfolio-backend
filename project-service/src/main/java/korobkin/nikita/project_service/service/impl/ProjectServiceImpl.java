@@ -57,12 +57,8 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ProjectAlreadyExistsException(ErrorCode.PROJECT_ALREADY_EXISTS);
         }
 
-        Project project = new Project();
+        Project project = projectMapper.toEntity(request);
         project.setUserId(user.userId());
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        project.setGithubUrl(request.getGithubUrl());
-        project.setProjectPublic(request.isProjectPublic());
 
         projectRepository.save(project);
         log.info("Project with id {} saved in repository", project.getId());
