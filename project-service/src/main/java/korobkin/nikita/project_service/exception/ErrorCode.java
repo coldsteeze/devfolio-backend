@@ -12,6 +12,7 @@ public enum ErrorCode {
     PROJECT_SKILL_ALREADY_EXISTS("Project skill with this id already exists", HttpStatus.CONFLICT),
     PROJECT_TOO_MANY_IMAGES("Project have too many images", HttpStatus.CONFLICT),
     PROJECT_MAIN_IMAGE_NOT_FOUND("Project does not have a main image", HttpStatus.NOT_FOUND),
+    PROJECT_IMAGE_NOT_FOUND("Project does not have image with this url", HttpStatus.NOT_FOUND),
 
     MEDIA_INVALID_TYPE("Invalid image type", HttpStatus.BAD_REQUEST),
     MEDIA_UPLOAD_FAILED("Failed to upload image", HttpStatus.BAD_GATEWAY),

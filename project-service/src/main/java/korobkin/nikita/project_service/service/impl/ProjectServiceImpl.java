@@ -381,6 +381,40 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteProjectPhoto(UUID projectId, UserPrincipal currentUser, String url) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+
+        if (!project.getUserId().equals(currentUser.userId())) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    projectId, currentUser.userId());
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        ProjectImage projectImage = projectImageRepository.findByImageUrl(url)
+                .orElseThrow(() -> new ProjectImageNotFoundException(ErrorCode.PROJECT_IMAGE_NOT_FOUND));
+
+        try {
+            mediaClient.delete(url);
+
+            projectImageRepository.delete(projectImage);
+        } catch (FeignException ex) {
+            log.error("Failed to delete project photo: projectId={}, userId={}, status={}, response={}",
+                    projectId,
+                    currentUser.userId(),
+                    ex.status(),
+                    ex.contentUTF8(),
+                    ex
+            );
+
+            throw mediaErrorMapper.map(ex);
+        }
+    }
 
 
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {

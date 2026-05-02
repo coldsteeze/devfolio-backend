@@ -121,4 +121,13 @@ public class ProjectController implements ProjectControllerDocs {
         projectService.deletePreviewPhoto(projectId, currentUser);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping(value = "/{projectId}/images")
+    public ResponseEntity<Void> deleteProjectPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @RequestParam("imageUrl") String imageUrl,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        projectService.deleteProjectPhoto(projectId, currentUser, imageUrl);
+        return ResponseEntity.noContent().build();
+    }
 }
