@@ -105,4 +105,12 @@ public class ProjectController implements ProjectControllerDocs {
             @RequestPart("file") MultipartFile file) {
         return ResponseEntity.ok(projectService.uploadPreviewPhoto(projectId, currentUser, file));
     }
+
+    @PostMapping(value = "/{projectId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MediaResponse> uploadProjectPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(projectService.uploadProjectPhoto(projectId, currentUser, file));
+    }
 }
