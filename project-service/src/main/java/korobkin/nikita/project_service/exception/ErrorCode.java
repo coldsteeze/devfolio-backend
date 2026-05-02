@@ -10,6 +10,7 @@ public enum ErrorCode {
     SKILL_NOT_FOUND("Skill with this id not found", HttpStatus.NOT_FOUND),
     PROJECT_ALREADY_EXISTS("Project with this name already exists", HttpStatus.CONFLICT),
     PROJECT_SKILL_ALREADY_EXISTS("Project skill with this id already exists", HttpStatus.CONFLICT),
+    PROJECT_TOO_MANY_IMAGES("Project have too many images", HttpStatus.CONFLICT),
 
     MEDIA_INVALID_TYPE("Invalid image type", HttpStatus.BAD_REQUEST),
     MEDIA_FILE_TOO_LARGE("Image too large", HttpStatus.PAYLOAD_TOO_LARGE),

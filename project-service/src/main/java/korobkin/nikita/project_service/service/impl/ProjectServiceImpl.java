@@ -5,18 +5,21 @@ import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.*;
 import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.client.MediaClient;
+import korobkin.nikita.project_service.config.ProjectImageProperties;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.kafka.producer.*;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
+import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
@@ -52,6 +55,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectSkillMapper projectSkillMapper;
     private final MediaClient mediaClient;
     private final MediaErrorMapper mediaErrorMapper;
+    private final ProjectImageProperties projectImageProperties;
+    private final ProjectImageRepository projectImageRepository;
 
     @Override
     @Transactional
@@ -294,6 +299,50 @@ public class ProjectServiceImpl implements ProjectService {
             throw mediaErrorMapper.map(ex);
         }
     }
+
+    @Override
+    @Transactional
+    public MediaResponse uploadProjectPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+
+        if (!project.getUserId().equals(currentUser.userId())) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    projectId, currentUser.userId());
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        if (project.getImages().size() >= projectImageProperties.getMaxCount()) {
+            throw new ProjectTooManyImagesException(ErrorCode.PROJECT_TOO_MANY_IMAGES);
+        }
+
+        try {
+            MediaResponse response = mediaClient.upload(file, "projects/images");
+
+            ProjectImage projectImage = new ProjectImage();
+            projectImage.setProject(project);
+            projectImage.setImageUrl(response.url());
+
+            projectImageRepository.saveAndFlush(projectImage);
+
+            return response;
+
+        } catch (FeignException ex) {
+            log.error("Failed to upload project photo: projectId={}, userId={}, status={}, response={}",
+                    projectId,
+                    currentUser.userId(),
+                    ex.status(),
+                    ex.contentUTF8(),
+                    ex
+            );
+
+            throw mediaErrorMapper.map(ex);
+        }
+    }
+
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
         Specification<Project> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

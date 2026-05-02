@@ -43,4 +43,6 @@ public interface ProjectService {
     PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable);
 
     MediaResponse uploadPreviewPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
+
+    MediaResponse uploadProjectPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
 }
