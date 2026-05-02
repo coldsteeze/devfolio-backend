@@ -1,8 +1,6 @@
 package korobkin.nikita.project_service.client;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import korobkin.nikita.project_service.client.config.FeignMultipartConfig;
-import korobkin.nikita.project_service.dto.request.DeleteMediaRequest;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -27,5 +25,5 @@ public interface MediaClient {
     );
 
     @DeleteMapping("/api/media")
-    void delete(@RequestBody DeleteMediaRequest request);
+    void delete(@RequestParam("url") String url);
 }

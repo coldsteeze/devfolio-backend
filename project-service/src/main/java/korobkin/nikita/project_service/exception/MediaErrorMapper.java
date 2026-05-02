@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import korobkin.nikita.project_service.exception.media.MediaFileTooLargeException;
 import korobkin.nikita.project_service.exception.media.MediaInvalidTypeException;
+import korobkin.nikita.project_service.exception.media.MediaInvalidUrlException;
 import korobkin.nikita.project_service.exception.media.MediaUploadException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,9 @@ public class MediaErrorMapper {
 
                 case "FILE_TOO_LARGE" ->
                         new MediaFileTooLargeException();
+
+                case "INVALID_FILE_URL" ->
+                        new MediaInvalidUrlException();
 
                 default ->
                         new MediaUploadException();

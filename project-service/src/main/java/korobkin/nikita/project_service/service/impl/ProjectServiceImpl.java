@@ -343,6 +343,46 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @Override
+    @Transactional
+    public void deletePreviewPhoto(UUID projectId, UserPrincipal currentUser) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+
+        if (!project.getUserId().equals(currentUser.userId())) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    projectId, currentUser.userId());
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        if (project.getMainImageUrl() == null) {
+            throw new ProjectMainImageNotFoundException(ErrorCode.PROJECT_MAIN_IMAGE_NOT_FOUND);
+        }
+
+        try {
+            log.info("Main image url: {}", project.getMainImageUrl());
+            mediaClient.delete(project.getMainImageUrl());
+
+            project.setMainImageUrl(null);
+
+        } catch (FeignException ex) {
+            log.error("Failed to delete project photo: projectId={}, userId={}, status={}, response={}",
+                    projectId,
+                    currentUser.userId(),
+                    ex.status(),
+                    ex.contentUTF8(),
+                    ex
+            );
+
+            throw mediaErrorMapper.map(ex);
+        }
+    }
+
+
+
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
         Specification<Project> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

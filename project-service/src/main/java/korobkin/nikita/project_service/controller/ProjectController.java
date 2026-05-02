@@ -113,4 +113,12 @@ public class ProjectController implements ProjectControllerDocs {
             @RequestPart("file") MultipartFile file) {
         return ResponseEntity.ok(projectService.uploadProjectPhoto(projectId, currentUser, file));
     }
+
+    @DeleteMapping(value = "/{projectId}/preview")
+    public ResponseEntity<Void> deletePreviewPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        projectService.deletePreviewPhoto(projectId, currentUser);
+        return ResponseEntity.noContent().build();
+    }
 }

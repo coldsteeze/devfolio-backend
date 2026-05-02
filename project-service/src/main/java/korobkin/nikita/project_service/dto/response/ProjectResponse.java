@@ -17,6 +17,14 @@ public record ProjectResponse(
         @Schema(example = "Platform for developers to showcase projects", description = "Project description")
         String description,
 
+        @Schema(description = "Short project description for preview",
+                example = "Platform for developers to showcase projects")
+        String shortDescription,
+
+        @Schema(description = "URL of the main project image",
+                example = "https://cdn.example.com/projects/123/main.jpg")
+        String mainImageUrl,
+
         @Schema(example = "https://github.com/user/project", description = "GitHub repository URL")
         String githubUrl,
 

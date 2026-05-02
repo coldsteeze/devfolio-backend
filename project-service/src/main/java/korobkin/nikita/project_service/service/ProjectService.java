@@ -45,4 +45,6 @@ public interface ProjectService {
     MediaResponse uploadPreviewPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
 
     MediaResponse uploadProjectPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
+
+    void deletePreviewPhoto(UUID projectId, UserPrincipal currentUser);
 }
