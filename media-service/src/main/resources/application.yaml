@@ -4,3 +4,9 @@ media:
     - image/jpeg
     - image/png
     - image/webp
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1

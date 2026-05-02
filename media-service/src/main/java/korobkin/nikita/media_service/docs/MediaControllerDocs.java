@@ -5,9 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import korobkin.nikita.media_service.dto.DeleteMediaRequest;
 import korobkin.nikita.media_service.dto.MediaResponse;
 import korobkin.nikita.media_service.exception.ApiError;
 import org.springframework.http.MediaType;
@@ -125,11 +123,9 @@ public interface MediaControllerDocs {
             }
     )
     ResponseEntity<Void> delete(
-            @RequestBody(
+            @Parameter(
                     description = "Url for delete photo",
                     required = true,
-                    content = @Content(
-                            schema = @Schema(implementation = DeleteMediaRequest.class)
-                    )
-            ) DeleteMediaRequest request);
+                    example = "example = \"http://localhost:9000/media-bucket/avatars/123e4567-e89b-12d3-a456-426614174000.png\""
+            ) String url);
 }
