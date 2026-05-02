@@ -5,8 +5,10 @@ import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,4 +41,6 @@ public interface ProjectService {
     List<ProjectSkillResponse> getProjectSkills(UUID projectId, UserPrincipal user);
 
     PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable);
+
+    MediaResponse uploadPreviewPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
 }

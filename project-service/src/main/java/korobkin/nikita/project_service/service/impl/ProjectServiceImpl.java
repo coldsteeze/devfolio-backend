@@ -1,18 +1,18 @@
 package korobkin.nikita.project_service.service.impl;
 
+import feign.FeignException;
 import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.*;
 import korobkin.nikita.events.skill.SkillVerificationResult;
+import korobkin.nikita.project_service.client.MediaClient;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
-import korobkin.nikita.project_service.exception.ErrorCode;
-import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
-import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
-import korobkin.nikita.project_service.exception.ProjectNotFoundException;
+import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.kafka.producer.*;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectDeletedEventProducer projectDeletedEventProducer;
     private final ProjectSkillsUpdatedEventProducer projectSkillsUpdatedEventProducer;
     private final ProjectSkillMapper projectSkillMapper;
+    private final MediaClient mediaClient;
+    private final MediaErrorMapper mediaErrorMapper;
 
     @Override
     @Transactional
@@ -245,6 +248,52 @@ public class ProjectServiceImpl implements ProjectService {
         );
     }
 
+    @Override
+    @Transactional
+    public MediaResponse uploadPreviewPhoto(UUID projectId,
+                                            UserPrincipal currentUser,
+                                            MultipartFile file) {
+
+        log.info("Uploading preview photo: projectId={}, userId={}, fileName={}",
+                projectId,
+                currentUser.userId(),
+                file != null ? file.getOriginalFilename() : "null"
+        );
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+
+        if (!project.getUserId().equals(currentUser.userId())) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    projectId, currentUser.userId());
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+
+        try {
+            MediaResponse response = mediaClient.upload(file, "projects/previews");
+
+            project.setMainImageUrl(response.url());
+
+            log.info("Preview photo uploaded successfully: projectId={}, url={}",
+                    projectId, response.url());
+
+            return response;
+
+        } catch (FeignException ex) {
+            log.error("Failed to upload preview photo: projectId={}, userId={}, status={}, response={}",
+                    projectId,
+                    currentUser.userId(),
+                    ex.status(),
+                    ex.contentUTF8(),
+                    ex
+            );
+
+            throw mediaErrorMapper.map(ex);
+        }
+    }
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
         Specification<Project> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
