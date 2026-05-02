@@ -22,3 +22,5 @@ jwt:
 services:
   skill-service:
     url: ${SKILL_SERVICE_URL}
+  media-service:
+    url: ${MEDIA_SERVICE_URL}

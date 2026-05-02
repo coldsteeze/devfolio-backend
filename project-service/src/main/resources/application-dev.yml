@@ -17,3 +17,5 @@ jwt:
 services:
   skill-service:
     url: http://localhost:8083
+  media-service:
+    url: http://localhost:8086
