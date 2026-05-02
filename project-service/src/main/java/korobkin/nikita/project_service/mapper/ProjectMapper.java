@@ -13,7 +13,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.data.domain.Page;
 
-@Mapper(componentModel = "spring", uses = {ProjectSkillMapper.class})
+@Mapper(componentModel = "spring", uses = {ProjectSkillMapper.class, ProjectImageMapper.class})
 public interface ProjectMapper {
 
     @Mapping(target = "projectPublic", source = "projectPublic")
@@ -27,6 +27,7 @@ public interface ProjectMapper {
 
     @Mapping(target = "project", source = "project")
     @Mapping(target = "skills", source = "skills")
+    @Mapping(target = "images", source = "images")
     ProjectDetailsResponse toDetailsDto(Project project);
 
     @Mapping(target = "projectId", source = "id")
