@@ -49,6 +49,11 @@ public class Project {
             orphanRemoval = true)
     private List<ProjectSkill> skills = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<ProjectImage> images = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
