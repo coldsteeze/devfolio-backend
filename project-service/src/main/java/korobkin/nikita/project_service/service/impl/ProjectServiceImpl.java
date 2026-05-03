@@ -79,12 +79,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectResponse updateProject(UpdateProjectRequest request, UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectMapper.updateEntityFromDto(request, project);
         project.setUpdatedAt(LocalDateTime.now());
@@ -98,12 +95,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public ProjectDetailsResponse getProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         log.info("Successfully get project with id {}", project.getId());
 
@@ -134,12 +128,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void deleteProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectRepository.delete(project);
         log.info("Successfully delete project with id {}", projectId);
@@ -150,12 +141,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectSkillResponse addSkillProject(UUID projectId, UUID skillId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         return projectSkillService.addForProject(project, skillId, true);
     }
@@ -163,12 +151,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void deleteSkillProject(UUID projectId, UUID skillId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectSkillService.deleteForProject(project, skillId);
     }
@@ -176,12 +161,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public VerificationResponse verifySkillProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         List<ProjectSkill> projectSkills = project.getSkills();
 
@@ -227,12 +209,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public List<ProjectSkillResponse> getProjectSkills(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         log.info("Get projects skill with project id {}", projectId);
 
@@ -265,153 +244,104 @@ public class ProjectServiceImpl implements ProjectService {
                 file != null ? file.getOriginalFilename() : "null"
         );
 
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> {
-                    log.warn("Project not found: projectId={}", projectId);
-                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
-                });
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(currentUser.userId())) {
-            log.warn("Access denied: projectId={}, userId={}",
-                    projectId, currentUser.userId());
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, currentUser.userId());
 
-        try {
-            MediaResponse response = mediaClient.upload(file, "projects/previews");
+        MediaResponse response = safeUpload(file, "/project/previews");
 
-            project.setMainImageUrl(response.url());
+        project.setMainImageUrl(response.url());
 
-            log.info("Preview photo uploaded successfully: projectId={}, url={}",
-                    projectId, response.url());
-
-            return response;
-
-        } catch (FeignException ex) {
-            log.error("Failed to upload preview photo: projectId={}, userId={}, status={}, response={}",
-                    projectId,
-                    currentUser.userId(),
-                    ex.status(),
-                    ex.contentUTF8(),
-                    ex
-            );
-
-            throw mediaErrorMapper.map(ex);
-        }
+        return response;
     }
 
     @Override
     @Transactional
     public MediaResponse uploadProjectPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> {
-                    log.warn("Project not found: projectId={}", projectId);
-                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
-                });
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(currentUser.userId())) {
-            log.warn("Access denied: projectId={}, userId={}",
-                    projectId, currentUser.userId());
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, currentUser.userId());
 
-        if (project.getImages().size() >= projectImageProperties.getMaxCount()) {
+        int count = projectImageRepository.countByProjectId((projectId));
+
+        if (count >= projectImageProperties.getMaxCount()) {
             throw new ProjectTooManyImagesException(ErrorCode.PROJECT_TOO_MANY_IMAGES);
         }
 
-        try {
-            MediaResponse response = mediaClient.upload(file, "projects/images");
+        MediaResponse response = safeUpload(file, "projects/images");
 
-            ProjectImage projectImage = new ProjectImage();
-            projectImage.setProject(project);
-            projectImage.setImageUrl(response.url());
+        ProjectImage projectImage = new ProjectImage();
+        projectImage.setProject(project);
+        projectImage.setImageUrl(response.url());
 
-            projectImageRepository.saveAndFlush(projectImage);
+        projectImageRepository.saveAndFlush(projectImage);
 
-            return response;
-
-        } catch (FeignException ex) {
-            log.error("Failed to upload project photo: projectId={}, userId={}, status={}, response={}",
-                    projectId,
-                    currentUser.userId(),
-                    ex.status(),
-                    ex.contentUTF8(),
-                    ex
-            );
-
-            throw mediaErrorMapper.map(ex);
-        }
+        return response;
     }
 
     @Override
     @Transactional
     public void deletePreviewPhoto(UUID projectId, UserPrincipal currentUser) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> {
-                    log.warn("Project not found: projectId={}", projectId);
-                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
-                });
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(currentUser.userId())) {
-            log.warn("Access denied: projectId={}, userId={}",
-                    projectId, currentUser.userId());
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, currentUser.userId());
 
         if (project.getMainImageUrl() == null) {
             throw new ProjectMainImageNotFoundException(ErrorCode.PROJECT_MAIN_IMAGE_NOT_FOUND);
         }
 
-        try {
-            log.info("Main image url: {}", project.getMainImageUrl());
-            mediaClient.delete(project.getMainImageUrl());
+        safeDelete(project.getMainImageUrl());
 
-            project.setMainImageUrl(null);
-
-        } catch (FeignException ex) {
-            log.error("Failed to delete project photo: projectId={}, userId={}, status={}, response={}",
-                    projectId,
-                    currentUser.userId(),
-                    ex.status(),
-                    ex.contentUTF8(),
-                    ex
-            );
-
-            throw mediaErrorMapper.map(ex);
-        }
+        project.setMainImageUrl(null);
     }
 
     @Override
     @Transactional
     public void deleteProjectPhoto(UUID projectId, UserPrincipal currentUser, String url) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> {
-                    log.warn("Project not found: projectId={}", projectId);
-                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
-                });
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(currentUser.userId())) {
-            log.warn("Access denied: projectId={}, userId={}",
-                    projectId, currentUser.userId());
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, currentUser.userId());
 
         ProjectImage projectImage = projectImageRepository.findByImageUrl(url)
                 .orElseThrow(() -> new ProjectImageNotFoundException(ErrorCode.PROJECT_IMAGE_NOT_FOUND));
 
+        safeDelete(url);
+
+        projectImageRepository.delete(projectImage);
+    }
+
+    private Project getProjectOrThrow(UUID projectId) {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+    }
+
+    private void checkAccess(Project project, UUID userId) {
+        if (!project.getUserId().equals(userId)) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    project.getId(), userId);
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+    }
+
+    private MediaResponse safeUpload(MultipartFile file, String folder) {
+        try {
+            return mediaClient.upload(file, folder);
+        } catch (FeignException ex) {
+            log.error("Media upload failed: status={}, body={}",
+                    ex.status(), ex.contentUTF8(), ex);
+            throw mediaErrorMapper.map(ex);
+        }
+    }
+
+    private void safeDelete(String url) {
         try {
             mediaClient.delete(url);
-
-            projectImageRepository.delete(projectImage);
         } catch (FeignException ex) {
-            log.error("Failed to delete project photo: projectId={}, userId={}, status={}, response={}",
-                    projectId,
-                    currentUser.userId(),
-                    ex.status(),
-                    ex.contentUTF8(),
-                    ex
-            );
-
+            log.error("Media delete failed: status={}, body={}",
+                    ex.status(), ex.contentUTF8(), ex);
             throw mediaErrorMapper.map(ex);
         }
     }

@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface ProjectImageRepository extends JpaRepository<ProjectImage, UUID> {
 
     Optional<ProjectImage> findByImageUrl(String imageUrl);
+
+    int countByProjectId(UUID projectId);
 }
