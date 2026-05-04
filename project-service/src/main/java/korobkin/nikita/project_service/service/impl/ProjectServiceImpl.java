@@ -1,22 +1,25 @@
 package korobkin.nikita.project_service.service.impl;
 
+import feign.FeignException;
 import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.*;
 import korobkin.nikita.events.skill.SkillVerificationResult;
+import korobkin.nikita.project_service.client.MediaClient;
+import korobkin.nikita.project_service.config.ProjectImageProperties;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
-import korobkin.nikita.project_service.exception.ErrorCode;
-import korobkin.nikita.project_service.exception.ProjectAccessDeniedException;
-import korobkin.nikita.project_service.exception.ProjectAlreadyExistsException;
-import korobkin.nikita.project_service.exception.ProjectNotFoundException;
+import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.kafka.producer.*;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
+import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
@@ -28,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,6 +53,10 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectDeletedEventProducer projectDeletedEventProducer;
     private final ProjectSkillsUpdatedEventProducer projectSkillsUpdatedEventProducer;
     private final ProjectSkillMapper projectSkillMapper;
+    private final MediaClient mediaClient;
+    private final MediaErrorMapper mediaErrorMapper;
+    private final ProjectImageProperties projectImageProperties;
+    private final ProjectImageRepository projectImageRepository;
 
     @Override
     @Transactional
@@ -57,12 +65,8 @@ public class ProjectServiceImpl implements ProjectService {
             throw new ProjectAlreadyExistsException(ErrorCode.PROJECT_ALREADY_EXISTS);
         }
 
-        Project project = new Project();
+        Project project = projectMapper.toEntity(request);
         project.setUserId(user.userId());
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        project.setGithubUrl(request.getGithubUrl());
-        project.setProjectPublic(request.isProjectPublic());
 
         projectRepository.save(project);
         log.info("Project with id {} saved in repository", project.getId());
@@ -75,12 +79,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectResponse updateProject(UpdateProjectRequest request, UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectMapper.updateEntityFromDto(request, project);
         project.setUpdatedAt(LocalDateTime.now());
@@ -94,12 +95,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public ProjectDetailsResponse getProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         log.info("Successfully get project with id {}", project.getId());
 
@@ -130,12 +128,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void deleteProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectRepository.delete(project);
         log.info("Successfully delete project with id {}", projectId);
@@ -146,12 +141,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectSkillResponse addSkillProject(UUID projectId, UUID skillId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         return projectSkillService.addForProject(project, skillId, true);
     }
@@ -159,12 +151,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void deleteSkillProject(UUID projectId, UUID skillId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         projectSkillService.deleteForProject(project, skillId);
     }
@@ -172,12 +161,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public VerificationResponse verifySkillProject(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         List<ProjectSkill> projectSkills = project.getSkills();
 
@@ -223,17 +209,152 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public List<ProjectSkillResponse> getProjectSkills(UUID projectId, UserPrincipal user) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = getProjectOrThrow(projectId);
 
-        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
-            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
-        }
+        checkAccess(project, user.userId());
 
         log.info("Get projects skill with project id {}", projectId);
 
         return projectSkillService.getProjectSkills(project);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable) {
+        Page<ProjectFeedResponse> page = projectRepository.findFeed(pageable);
+
+        return new PagedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+
+    @Override
+    @Transactional
+    public MediaResponse uploadPreviewPhoto(UUID projectId,
+                                            UserPrincipal currentUser,
+                                            MultipartFile file) {
+
+        log.info("Uploading preview photo: projectId={}, userId={}, fileName={}",
+                projectId,
+                currentUser.userId(),
+                file != null ? file.getOriginalFilename() : "null"
+        );
+
+        Project project = getProjectOrThrow(projectId);
+
+        checkAccess(project, currentUser.userId());
+
+        MediaResponse response = safeUpload(file, "/project/previews");
+
+        String old = project.getMainImageUrl();
+        project.setMainImageUrl(response.url());
+
+        if (old != null) {
+            try {
+                safeDelete(old);
+            } catch (Exception ex) {
+                log.warn("Failed to delete old preview: {}", ex.getMessage());
+            }
+        }
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public MediaResponse uploadProjectPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file) {
+        Project project = getProjectOrThrow(projectId);
+
+        checkAccess(project, currentUser.userId());
+
+        int count = projectImageRepository.countByProjectId((projectId));
+
+        if (count >= projectImageProperties.getMaxCount()) {
+            throw new ProjectTooManyImagesException(ErrorCode.PROJECT_TOO_MANY_IMAGES);
+        }
+
+        MediaResponse response = safeUpload(file, "projects/images");
+
+        ProjectImage projectImage = new ProjectImage();
+        projectImage.setProject(project);
+        projectImage.setImageUrl(response.url());
+
+        projectImageRepository.saveAndFlush(projectImage);
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public void deletePreviewPhoto(UUID projectId, UserPrincipal currentUser) {
+        Project project = getProjectOrThrow(projectId);
+
+        checkAccess(project, currentUser.userId());
+
+        if (project.getMainImageUrl() == null) {
+            throw new ProjectMainImageNotFoundException(ErrorCode.PROJECT_MAIN_IMAGE_NOT_FOUND);
+        }
+
+        safeDelete(project.getMainImageUrl());
+
+        project.setMainImageUrl(null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProjectPhoto(UUID projectId, UserPrincipal currentUser, String url) {
+        Project project = getProjectOrThrow(projectId);
+
+        checkAccess(project, currentUser.userId());
+
+        ProjectImage projectImage = projectImageRepository.findByImageUrl(url)
+                .orElseThrow(() -> new ProjectImageNotFoundException(ErrorCode.PROJECT_IMAGE_NOT_FOUND));
+
+        safeDelete(url);
+
+        projectImageRepository.delete(projectImage);
+    }
+
+    private Project getProjectOrThrow(UUID projectId) {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+    }
+
+    private void checkAccess(Project project, UUID userId) {
+        if (!project.getUserId().equals(userId)) {
+            log.warn("Access denied: projectId={}, userId={}",
+                    project.getId(), userId);
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
+    }
+
+    private MediaResponse safeUpload(MultipartFile file, String folder) {
+        try {
+            return mediaClient.upload(file, folder);
+        } catch (FeignException ex) {
+            log.error("Media upload failed: status={}, body={}",
+                    ex.status(), ex.contentUTF8(), ex);
+            throw mediaErrorMapper.map(ex);
+        }
+    }
+
+    private void safeDelete(String url) {
+        try {
+            mediaClient.delete(url);
+        } catch (FeignException ex) {
+            log.error("Media delete failed: status={}, body={}",
+                    ex.status(), ex.contentUTF8(), ex);
+            throw mediaErrorMapper.map(ex);
+        }
+    }
+
 
     private Page<Project> getUserProjectsWithFilters(UUID userId, ProjectFilterRequest filter, Pageable pageable) {
         Specification<Project> spec = (root, query, cb) -> {

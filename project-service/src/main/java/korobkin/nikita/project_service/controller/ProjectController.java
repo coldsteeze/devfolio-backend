@@ -4,17 +4,19 @@ import jakarta.validation.Valid;
 import korobkin.nikita.project_service.docs.ProjectControllerDocs;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
-import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
-import korobkin.nikita.project_service.dto.response.ProjectResponse;
-import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
-import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -85,8 +87,47 @@ public class ProjectController implements ProjectControllerDocs {
 
     @GetMapping("/{projectId}/skills")
     public ResponseEntity<List<ProjectSkillResponse>> getProjectSkills(
-        @PathVariable("projectId") UUID projectId,
-        @AuthenticationPrincipal UserPrincipal currentUser) {
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
         return ResponseEntity.ok(projectService.getProjectSkills(projectId, currentUser));
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(projectService.getProjectsFeed(pageable));
+    }
+
+    @PostMapping(value = "/{projectId}/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MediaResponse> uploadPreviewPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(projectService.uploadPreviewPhoto(projectId, currentUser, file));
+    }
+
+    @PostMapping(value = "/{projectId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MediaResponse> uploadProjectPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(projectService.uploadProjectPhoto(projectId, currentUser, file));
+    }
+
+    @DeleteMapping(value = "/{projectId}/preview")
+    public ResponseEntity<Void> deletePreviewPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        projectService.deletePreviewPhoto(projectId, currentUser);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping(value = "/{projectId}/images")
+    public ResponseEntity<Void> deleteProjectPhoto(
+            @PathVariable("projectId") UUID projectId,
+            @RequestParam("imageUrl") String imageUrl,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        projectService.deleteProjectPhoto(projectId, currentUser, imageUrl);
+        return ResponseEntity.noContent().build();
     }
 }

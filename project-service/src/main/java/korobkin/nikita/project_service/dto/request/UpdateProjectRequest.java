@@ -23,6 +23,10 @@ public class UpdateProjectRequest {
     @Size(max = 1000, message = "Description must be up to 1000 characters long")
     private String description;
 
+    @Schema(example = "Updated short description of the project", description = "Updated short project description")
+    @Size(max = 256, message = "Short description must be up to 256 characters long")
+    private String shortDescription;
+
     @Schema(example = "https://github.com/user/updated-project", description = "Updated GitHub repository URL")
     @URL(message = "Github URL must be a valid URL")
     private String githubUrl;

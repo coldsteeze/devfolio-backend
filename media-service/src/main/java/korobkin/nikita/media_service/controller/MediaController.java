@@ -1,7 +1,6 @@
 package korobkin.nikita.media_service.controller;
 
 import korobkin.nikita.media_service.docs.MediaControllerDocs;
-import korobkin.nikita.media_service.dto.DeleteMediaRequest;
 import korobkin.nikita.media_service.dto.MediaResponse;
 import korobkin.nikita.media_service.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +27,8 @@ public class MediaController implements MediaControllerDocs {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> delete(@RequestBody DeleteMediaRequest request) {
-        mediaService.delete(request.url());
+    public ResponseEntity<Void> delete(@RequestParam("url") String url) {
+        mediaService.delete(url);
         return ResponseEntity.noContent().build();
     }
 }

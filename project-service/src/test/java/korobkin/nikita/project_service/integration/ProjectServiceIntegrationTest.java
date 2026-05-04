@@ -5,13 +5,17 @@ import feign.Request;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
 import korobkin.nikita.events.skill.SkillVerificationResult;
+import korobkin.nikita.project_service.client.MediaClient;
 import korobkin.nikita.project_service.client.SkillClient;
+import korobkin.nikita.project_service.config.ProjectImageProperties;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.entity.enums.SkillCategory;
 import korobkin.nikita.project_service.exception.*;
@@ -19,6 +23,7 @@ import korobkin.nikita.project_service.fixtures.ProjectFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectRequestFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectSkillFixtures;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
+import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
@@ -32,6 +37,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +45,10 @@ import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -53,8 +61,17 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ProjectSkillRepository projectSkillRepository;
 
+    @Autowired
+    private ProjectImageProperties projectImageProperties;
+
+    @Autowired
+    private ProjectImageRepository projectImageRepository;
+
     @MockitoBean
     private SkillClient skillClient;
+
+    @MockitoBean
+    private MediaClient mediaClient;
 
     @MockitoSpyBean
     private SkillEventProducer skillEventProducer;
@@ -554,6 +571,126 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
                 new UserPrincipal(UUID.randomUUID())))
                 .isInstanceOf(ProjectAccessDeniedException.class)
                 .hasMessageContaining(ErrorCode.PROJECT_ACCESS_DENIED.message);
+    }
+
+    @Test
+    void uploadPreviewPhoto_shouldUploadAndSaveUrl() {
+        Project project = createAndSaveProject();
+
+        MultipartFile file = mock(MultipartFile.class);
+
+        when(file.getOriginalFilename()).thenReturn("test.png");
+
+        MediaResponse response = new MediaResponse("http://localhost/file.png");
+
+        when(mediaClient.upload(any(), eq("/project/previews")))
+                .thenReturn(response);
+
+        MediaResponse result = projectService.uploadPreviewPhoto(project.getId(), new UserPrincipal(userId), file);
+
+        assertEquals("http://localhost/file.png", result.url());
+
+        Project updated = projectRepository.findById(project.getId()).orElseThrow();
+        assertEquals("http://localhost/file.png", updated.getMainImageUrl());
+    }
+
+    @Test
+    void uploadPreviewPhoto_shouldThrow_whenAccessDenied() {
+        Project project = createAndSaveProject();
+
+        assertThrows(ProjectAccessDeniedException.class,
+                () -> projectService.uploadPreviewPhoto(
+                        project.getId(),
+                        new UserPrincipal(UUID.randomUUID()),
+                        mock(MultipartFile.class))
+        );
+    }
+
+    @Test
+    void uploadProjectPhoto_shouldSaveImage() {
+        Project project = createAndSaveProject();
+
+        MultipartFile file = mock(MultipartFile.class);
+
+        MediaResponse response = new MediaResponse("http://localhost/image.png");
+
+        when(mediaClient.upload(any(), eq("projects/images")))
+                .thenReturn(response);
+
+        MediaResponse result = projectService.uploadProjectPhoto(project.getId(), new UserPrincipal(userId), file);
+
+        assertEquals("http://localhost/image.png", result.url());
+
+        List<ProjectImage> images = projectImageRepository.findAll();
+        assertEquals(1, images.size());
+        assertEquals("http://localhost/image.png", images.get(0).getImageUrl());
+    }
+
+    @Test
+    void uploadProjectPhoto_shouldThrow_whenTooManyImages() {
+        Project project = createAndSaveProject();
+
+        for (int i = 0; i < 5; i++) {
+            ProjectImage img = new ProjectImage();
+            img.setProject(project);
+            img.setImageUrl("url-" + i);
+            projectImageRepository.save(img);
+        }
+
+        project = projectRepository.findById(project.getId()).orElseThrow();
+
+        Project finalProject = project;
+        assertThrows(ProjectTooManyImagesException.class,
+                () -> projectService.uploadProjectPhoto(
+                        finalProject.getId(),
+                        new UserPrincipal(userId),
+                        mock(MultipartFile.class))
+        );
+    }
+
+    @Test
+    void deletePreviewPhoto_shouldDeleteAndNullify() {
+        Project project = createAndSaveProject();
+        project.setMainImageUrl("http://localhost/file.png");
+
+        projectRepository.save(project);
+
+        doNothing().when(mediaClient).delete(anyString());
+
+        projectService.deletePreviewPhoto(project.getId(), new UserPrincipal(userId));
+
+        Project updated = projectRepository.findById(project.getId()).orElseThrow();
+
+        assertNull(updated.getMainImageUrl());
+        verify(mediaClient).delete("http://localhost/file.png");
+    }
+
+    @Test
+    void deleteProjectPhoto_shouldDeleteImage() {
+        Project project = createAndSaveProject();
+
+        ProjectImage image = new ProjectImage();
+        image.setProject(project);
+        image.setImageUrl("http://localhost/image.png");
+
+        projectImageRepository.save(image);
+
+        doNothing().when(mediaClient).delete(anyString());
+
+        projectService.deleteProjectPhoto(project.getId(), new UserPrincipal(userId), "http://localhost/image.png");
+
+        assertTrue(projectImageRepository.findAll().isEmpty());
+        verify(mediaClient).delete("http://localhost/image.png");
+    }
+
+    @Test
+    void deleteProjectPhoto_shouldThrow_whenImageNotFound() {
+        Project project = createAndSaveProject();
+
+        projectRepository.save(project);
+
+        assertThrows(ProjectImageNotFoundException.class,
+                () -> projectService.deleteProjectPhoto(project.getId(), new UserPrincipal(userId), "wrong-url"));
     }
 
     private Project createAndSaveProject() {

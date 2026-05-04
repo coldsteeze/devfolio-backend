@@ -2,6 +2,7 @@ package korobkin.nikita.project_service.mapper;
 
 import korobkin.nikita.events.ProjectCreatedEvent;
 import korobkin.nikita.events.ProjectUpdatedEvent;
+import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.PagedResponse;
 import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
@@ -12,7 +13,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.data.domain.Page;
 
-@Mapper(componentModel = "spring", uses = {ProjectSkillMapper.class})
+@Mapper(componentModel = "spring", uses = {ProjectSkillMapper.class, ProjectImageMapper.class})
 public interface ProjectMapper {
 
     @Mapping(target = "projectPublic", source = "projectPublic")
@@ -26,6 +27,7 @@ public interface ProjectMapper {
 
     @Mapping(target = "project", source = "project")
     @Mapping(target = "skills", source = "skills")
+    @Mapping(target = "images", source = "images")
     ProjectDetailsResponse toDetailsDto(Project project);
 
     @Mapping(target = "projectId", source = "id")
@@ -33,4 +35,6 @@ public interface ProjectMapper {
 
     @Mapping(target = "projectId", source = "id")
     ProjectUpdatedEvent toProjectUpdatedEvent(Project project);
+
+    Project toEntity(CreateProjectRequest request);
 }

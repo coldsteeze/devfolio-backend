@@ -1,6 +1,7 @@
 package korobkin.nikita.project_service.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,15 +10,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
-import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
-import korobkin.nikita.project_service.dto.response.ProjectResponse;
-import korobkin.nikita.project_service.dto.response.ProjectSkillResponse;
-import korobkin.nikita.project_service.dto.response.VerificationResponse;
+import korobkin.nikita.project_service.dto.response.*;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.exception.ApiError;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -467,6 +469,213 @@ public interface ProjectControllerDocs {
     )
     ResponseEntity<List<ProjectSkillResponse>> getProjectSkills(
             @PathVariable UUID projectId,
+            UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "Project feed",
+            description = "Project feed with a brief description and a photo of the project",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Projects fetched successfully",
+                            content = @Content(schema = @Schema(implementation = PagedResponse.class))
+                    )
+            }
+    )
+    ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
+            @ParameterObject Pageable pageable
+    );
+
+
+    @Operation(
+            summary = "Upload a preview media photo",
+            description = "Uploads a photo",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Photo uploaded successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "Invalid file type", value = """
+                                                        {
+                                                          "status": 400,
+                                                          "error": "Bad Request",
+                                                          "message": "Invalid image type",
+                                                          "code": "MEDIA_INVALID_TYPE",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/preview",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "413",
+                            description = "Payload Too Large",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File size exceeds limit", value = """
+                                                        {
+                                                          "status": 413,
+                                                          "error": "Payload Too Large",
+                                                          "message": "Image too large",
+                                                          "code": "MEDIA_FILE_TOO_LARGE",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/preview",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            }
+    )
+    ResponseEntity<MediaResponse> uploadPreviewPhoto(
+            @PathVariable UUID projectId,
+            UserPrincipal principal,
+            @Parameter MultipartFile file
+    );
+
+    @Operation(
+            summary = "Upload a project media photo",
+            description = "Uploads a photo",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Photo uploaded successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad request",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "Invalid file type", value = """
+                                                        {
+                                                          "status": 400,
+                                                          "error": "Bad Request",
+                                                          "message": "Invalid image type",
+                                                          "code": "MEDIA_INVALID_TYPE",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/images",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "413",
+                            description = "Payload Too Large",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File size exceeds limit", value = """
+                                                        {
+                                                          "status": 413,
+                                                          "error": "Payload Too Large",
+                                                          "message": "Image too large",
+                                                          "code": "MEDIA_FILE_TOO_LARGE",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/images",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            }
+    )
+    ResponseEntity<MediaResponse> uploadProjectPhoto(
+            @PathVariable UUID projectId,
+            UserPrincipal principal,
+            @Parameter MultipartFile file
+    );
+
+    @Operation(
+            summary = "Delete a preview media photo",
+            description = "Deletes a photo",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Photo deleted successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not Found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File not found", value = """
+                                                        {
+                                                          "status": 404,
+                                                          "error": "Not Found",
+                                                          "message": "Project does not have a main image",
+                                                          "code": "PROJECT_MAIN_IMAGE_NOT_FOUND",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/preview",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            }
+    )
+    ResponseEntity<Void> deletePreviewPhoto(
+            @PathVariable UUID projectId,
+            UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "Delete a project media photo",
+            description = "Deletes a photo",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Photo deleted successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not Found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File not found", value = """
+                                                        {
+                                                          "status": 404,
+                                                          "error": "Not Found",
+                                                          "message": "Project does not have image with this url",
+                                                          "code": "PROJECT_IMAGE_NOT_FOUND",
+                                                          "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/images",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            }
+    )
+    ResponseEntity<Void> deleteProjectPhoto(
+            @PathVariable UUID projectId,
+            @Parameter String imageUrl,
             UserPrincipal principal
     );
 }

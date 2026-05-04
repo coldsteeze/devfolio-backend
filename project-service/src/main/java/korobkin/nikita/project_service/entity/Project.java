@@ -32,16 +32,27 @@ public class Project {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "short_description")
+    private String shortDescription;
+
     @Column(name = "github_url", nullable = false)
     private String githubUrl;
 
     @Column(name = "project_public", nullable = false)
     private boolean projectPublic;
 
+    @Column(name = "main_image_url")
+    private String mainImageUrl;
+
     @OneToMany(mappedBy = "project",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     private List<ProjectSkill> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "project",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<ProjectImage> images = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

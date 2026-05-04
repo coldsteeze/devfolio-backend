@@ -143,6 +143,7 @@ class MediaServiceUnitTest {
     void delete_shouldRemoveObjectSuccessfully() throws Exception {
         when(minioProperties.getBucket()).thenReturn(bucket);
         when(minioProperties.getUrl()).thenReturn(baseUrl);
+        when(minioProperties.getPublicUrl()).thenReturn(baseUrl);
 
         String url = baseUrl + "/" + bucket + "/avatars/test.png";
 
@@ -161,6 +162,7 @@ class MediaServiceUnitTest {
     void delete_shouldThrow_whenUrlNotFromBucket() {
         when(minioProperties.getBucket()).thenReturn(bucket);
         when(minioProperties.getUrl()).thenReturn(baseUrl);
+        when(minioProperties.getPublicUrl()).thenReturn(baseUrl);
 
         assertThrows(InvalidFileUrlException.class,
                 () -> mediaService.delete("http://evil.com/file.png"));
@@ -170,6 +172,7 @@ class MediaServiceUnitTest {
     void delete_shouldThrow_whenMinioFails() throws Exception {
         when(minioProperties.getBucket()).thenReturn(bucket);
         when(minioProperties.getUrl()).thenReturn(baseUrl);
+        when(minioProperties.getPublicUrl()).thenReturn(baseUrl);
 
         String url = baseUrl + "/" + bucket + "/avatars/test.png";
 

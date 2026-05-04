@@ -11,6 +11,9 @@ public record ProjectDetailsResponse(
         ProjectResponse project,
 
         @Schema(description = "List of project skills")
-        List<ProjectSkillResponse> skills
+        List<ProjectSkillResponse> skills,
+
+        @Schema(description = "List of project images")
+        List<ProjectImageResponse> images
 ) {
 }

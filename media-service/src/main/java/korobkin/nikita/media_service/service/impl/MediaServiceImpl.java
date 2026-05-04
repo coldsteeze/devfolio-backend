@@ -57,7 +57,9 @@ public class MediaServiceImpl implements MediaService {
     public void delete(String url) {
         validateUrl(url);
 
-        String objectName = extractObjectName(url);
+        String internalUrl = toInternalUrl(url);
+
+        String objectName = extractObjectName(internalUrl);
 
         try {
             minioClient.removeObject(
@@ -113,5 +115,12 @@ public class MediaServiceImpl implements MediaService {
         }
 
         return filename.substring(filename.lastIndexOf("."));
+    }
+
+    private String toInternalUrl(String publicUrl) {
+        return publicUrl.replace(
+                minioProperties.getPublicUrl(),
+                minioProperties.getUrl()
+        );
     }
 }
