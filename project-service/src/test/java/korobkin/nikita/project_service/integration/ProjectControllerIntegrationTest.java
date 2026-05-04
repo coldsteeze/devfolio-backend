@@ -3,6 +3,8 @@ package korobkin.nikita.project_service.integration;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import korobkin.nikita.project_service.client.MediaClient;
+import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
@@ -22,8 +24,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
@@ -39,6 +43,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -59,6 +65,9 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProjectSkillRepository projectSkillRepository;
+
+    @MockitoBean
+    private MediaClient mediaClient;
 
     private UUID userId;
     private UUID skillId;
@@ -439,6 +448,123 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message").value(ErrorCode.PROJECT_NOT_FOUND.message));
     }
 
+    @Test
+    void uploadPreviewPhoto_shouldReturn200() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        when(mediaClient.upload(any(), any()))
+                .thenReturn(new MediaResponse("http://test-url"));
+
+        mockMvc.perform(multipart("/api/projects/{id}/preview", project.getId())
+                        .file(mockImage())
+                        .with(auth(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("http://test-url"));
+    }
+
+    @Test
+    void uploadPreviewPhoto_shouldReturn403_whenNotOwner() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        UUID otherUser = UUID.randomUUID();
+
+        mockMvc.perform(multipart("/api/projects/{id}/preview", project.getId())
+                        .file(mockImage())
+                        .with(auth(otherUser)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void uploadProjectPhoto_shouldReturn200() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        when(mediaClient.upload(any(), eq("projects/images")))
+                .thenReturn(new MediaResponse("http://test-url"));
+
+        mockMvc.perform(multipart("/api/projects/{id}/images", project.getId())
+                        .file(mockImage())
+                        .with(auth(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("http://test-url"));
+    }
+
+    @Test
+    void uploadProjectPhoto_shouldReturn403_whenNotOwner() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        UUID otherUser = UUID.randomUUID();
+
+        mockMvc.perform(multipart("/api/projects/{id}/images", project.getId())
+                        .file(mockImage())
+                        .with(auth(otherUser)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deletePreviewPhoto_shouldReturn204() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        project.setMainImageUrl("http://test-url");
+        projectRepository.save(project);
+
+        doNothing().when(mediaClient).delete("http://test-url");
+
+        mockMvc.perform(delete("/api/projects/{id}/preview", project.getId())
+                        .with(auth(userId)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deletePreviewPhoto_shouldReturn404_whenNoImage() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        mockMvc.perform(delete("/api/projects/{id}/preview", project.getId())
+                        .with(auth(userId)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deletePreviewPhoto_shouldReturn403_whenNotOwner() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        UUID otherUser = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/projects/{id}/preview", project.getId())
+                        .with(auth(otherUser)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteProjectPhoto_shouldReturn404_whenImageNotFound() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        mockMvc.perform(delete("/api/projects/{id}/images", project.getId())
+                        .param("imageUrl", "http://not-exists")
+                        .with(auth(userId)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteProjectPhoto_shouldReturn403_whenNotOwner() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        UUID otherUser = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/projects/{id}/images", project.getId())
+                        .param("imageUrl", "http://test-url")
+                        .with(auth(otherUser)))
+                .andExpect(status().isForbidden());
+    }
+
     private String json(Object o) throws JsonProcessingException {
         return objectMapper.writeValueAsString(o);
     }
@@ -449,5 +575,14 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
                 null,
                 Collections.emptyList()
         ));
+    }
+
+    private MockMultipartFile mockImage() {
+        return new MockMultipartFile(
+                "file",
+                "image.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "test-image".getBytes()
+        );
     }
 }

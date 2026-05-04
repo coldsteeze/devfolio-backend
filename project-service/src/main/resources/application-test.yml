@@ -1,3 +1,9 @@
 services:
   skill-service:
     url: http://localhost:8083
+  media-service:
+    url: http://localhost:8086
+
+project:
+  images:
+    max-count: 5
