@@ -197,6 +197,7 @@ services:
       SKILL_SERVICE_URL: ${SKILL_SERVICE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER}
+      PROJECT_IMAGES_MAX_COUNT: ${PROJECT_IMAGES_MAX_COUNT}
     ports:
       - "8084:8080"
 
@@ -238,6 +239,8 @@ services:
     image: coldsteeze/media-service:latest
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MINIO_URL: ${MINIO_URL}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET}
