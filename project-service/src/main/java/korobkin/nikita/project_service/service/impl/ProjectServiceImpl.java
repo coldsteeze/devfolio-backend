@@ -250,7 +250,16 @@ public class ProjectServiceImpl implements ProjectService {
 
         MediaResponse response = safeUpload(file, "/project/previews");
 
+        String old = project.getMainImageUrl();
         project.setMainImageUrl(response.url());
+
+        if (old != null) {
+            try {
+                safeDelete(old);
+            } catch (Exception ex) {
+                log.warn("Failed to delete old preview: {}", ex.getMessage());
+            }
+        }
 
         return response;
     }
