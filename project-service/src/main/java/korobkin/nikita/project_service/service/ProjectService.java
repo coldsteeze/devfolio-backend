@@ -49,4 +49,8 @@ public interface ProjectService {
     void deletePreviewPhoto(UUID projectId, UserPrincipal currentUser);
 
     void deleteProjectPhoto(UUID projectId, UserPrincipal currentUser, String url);
+
+    ProjectFavoriteResponse addProjectFavorite(UUID projectId, UserPrincipal currentUser);
+
+    void deleteProjectFavorite(UUID projectId, UserPrincipal currentUser);
 }

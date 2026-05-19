@@ -7,7 +7,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpecificationExecutor<Project> {
@@ -34,4 +36,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
     """
     )
     Page<ProjectFeedResponse> findFeed(Pageable pageable);
+
+    @Query("SELECT p.userId FROM Project p WHERE p.id = :projectId")
+    Optional<UUID> findOwnerIdByProjectId(@Param("projectId") UUID projectId);
 }

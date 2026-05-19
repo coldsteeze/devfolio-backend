@@ -13,6 +13,9 @@ public enum ErrorCode {
     PROJECT_TOO_MANY_IMAGES("Project have too many images", HttpStatus.CONFLICT),
     PROJECT_MAIN_IMAGE_NOT_FOUND("Project does not have a main image", HttpStatus.NOT_FOUND),
     PROJECT_IMAGE_NOT_FOUND("Project does not have image with this url", HttpStatus.NOT_FOUND),
+    PROJECT_FAVORITE_NOT_FOUND("Project favorite with this id not found", HttpStatus.NOT_FOUND),
+    PROJECT_ALREADY_FAVORITED("Project favorite with this id already exists", HttpStatus.CONFLICT),
+    SELF_FAVORITE_NOT_ALLOWED("You can't add your project to favorites", HttpStatus.UNPROCESSABLE_ENTITY),
 
     MEDIA_INVALID_TYPE("Invalid image type", HttpStatus.BAD_REQUEST),
     MEDIA_UPLOAD_FAILED("Failed to upload image", HttpStatus.BAD_GATEWAY),
