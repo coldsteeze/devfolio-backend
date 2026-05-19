@@ -474,14 +474,7 @@ public interface ProjectControllerDocs {
 
     @Operation(
             summary = "Project feed",
-            description = "Project feed with a brief description and a photo of the project",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Projects fetched successfully",
-                            content = @Content(schema = @Schema(implementation = PagedResponse.class))
-                    )
-            }
+            description = "Project feed with a brief description and a photo of the project"
     )
     ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
             @ParameterObject Pageable pageable
