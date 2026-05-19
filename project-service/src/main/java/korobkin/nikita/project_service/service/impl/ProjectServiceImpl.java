@@ -373,6 +373,21 @@ public class ProjectServiceImpl implements ProjectService {
         log.info("Successfully removed from favorites: projectId={}, userId={}", projectId, currentUser.userId());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<ProjectFavoriteResponse> getUserProjectFavorites(UserPrincipal currentUser, Pageable pageable) {
+        Page<ProjectFavoriteResponse> page = projectFavoriteRepository
+                .findProjectFavoritesByUserId(currentUser.userId(), pageable);
+
+        return new PagedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+
     private Project getProjectOrThrow(UUID projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> {

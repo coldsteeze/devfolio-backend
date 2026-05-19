@@ -53,4 +53,6 @@ public interface ProjectService {
     ProjectFavoriteResponse addProjectFavorite(UUID projectId, UserPrincipal currentUser);
 
     void deleteProjectFavorite(UUID projectId, UserPrincipal currentUser);
+
+    PagedResponse<ProjectFavoriteResponse> getUserProjectFavorites(UserPrincipal currentUser, Pageable pageable);
 }
