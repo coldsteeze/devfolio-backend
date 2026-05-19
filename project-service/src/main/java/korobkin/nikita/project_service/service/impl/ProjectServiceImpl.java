@@ -140,6 +140,9 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.delete(project);
         log.info("Successfully delete project with id {}", projectId);
 
+        int removedFavorites = projectFavoriteRepository.deleteAllByProjectId(projectId);
+        log.info("Cleaned {} favorites for project {}", removedFavorites, projectId);
+
         projectDeletedEventProducer.sendProjectDeleted(new ProjectDeletedEvent(projectId));
     }
 

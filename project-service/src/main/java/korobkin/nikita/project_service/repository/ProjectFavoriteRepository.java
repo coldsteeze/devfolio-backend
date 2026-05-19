@@ -20,4 +20,6 @@ public interface ProjectFavoriteRepository extends JpaRepository<ProjectFavorite
     @Query("SELECT new korobkin.nikita.project_service.dto.response.ProjectFavoriteResponse(f.id, f.projectId, f.createdAt) " +
             "FROM ProjectFavorite f WHERE f.userId = :userId ORDER BY f.createdAt DESC")
     Page<ProjectFavoriteResponse> findProjectFavoritesByUserId(@Param("userId") UUID userId, Pageable pageable);
+
+    int deleteAllByProjectId(UUID projectId);
 }
