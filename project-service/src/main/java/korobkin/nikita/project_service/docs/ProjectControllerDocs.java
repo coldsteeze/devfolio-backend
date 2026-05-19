@@ -671,4 +671,110 @@ public interface ProjectControllerDocs {
             @Parameter String imageUrl,
             UserPrincipal principal
     );
+
+    @Operation(
+            summary = "Add project favorite",
+            description = "Add project favorite and return information about favorited project",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Project favorite added successfully",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ProjectFavoriteResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not Found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "status": 404,
+                                              "error": "Not Found",
+                                              "message": "Project with this id not found",
+                                              "code": "PROJECT_NOT_FOUND",
+                                              "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/favorites",
+                                              "timestamp": "2026-02-04T00:00:00"
+                                            }
+                                            """)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "Project favorite already exists",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "status": 409,
+                                              "error": "Conflict",
+                                              "message": "Project favorite with this id already exists",
+                                              "code": "PROJECT_ALREADY_FAVORITED",
+                                              "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/favorites",
+                                              "timestamp": "2026-02-04T00:00:00"
+                                            }
+                                            """)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "422",
+                            description = "Self project favorite not allowed",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "status": 422,
+                                              "error": "Unprocessable Entity",
+                                              "message": "You can't add your project to favorites",
+                                              "code": "SELF_FAVORITE_NOT_ALLOWED",
+                                              "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/favorites",
+                                              "timestamp": "2026-02-04T00:00:00"
+                                            }
+                                            """)
+                            )
+                    ),
+            }
+    )
+    ResponseEntity<ProjectFavoriteResponse> addProjectFavorite(
+            @PathVariable UUID projectId,
+            UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "Delete a project favorite",
+            description = "Deletes a project favorites",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Project favorite deleted successfully"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not Found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = @ExampleObject(value = """
+                                            {
+                                              "status": 404,
+                                              "error": "Not Found",
+                                              "message": "Project favorite with this id not found",
+                                              "code": "PROJECT_FAVORITE_NOT_FOUND",
+                                              "path": "/api/projects/550e8400-e29b-41d4-a716-446655440000/favorites",
+                                              "timestamp": "2026-02-04T00:00:00"
+                                            }
+                                            """)
+                            )
+                    ),
+            }
+    )
+    ResponseEntity<Void> deleteProjectFavorite(
+            @PathVariable UUID projectId,
+            UserPrincipal principal
+    );
 }
