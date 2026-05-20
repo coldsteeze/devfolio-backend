@@ -17,6 +17,9 @@ public record ProjectResponse(
         @Schema(example = "Platform for developers to showcase projects", description = "Project description")
         String description,
 
+        @Schema(example = "661b8411-e29b-41d4-a716-44665544123124", description = "User unique identifier")
+        UUID userId,
+
         @Schema(description = "Short project description for preview",
                 example = "Platform for developers to showcase projects")
         String shortDescription,

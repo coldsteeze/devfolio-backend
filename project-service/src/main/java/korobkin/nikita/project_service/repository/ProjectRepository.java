@@ -21,6 +21,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
                        SELECT new korobkin.nikita.project_service.dto.response.ProjectFeedResponse(
                            p.id,
                            p.name,
+                           p.userId,
                            p.shortDescription,
                            p.mainImageUrl,
                            p.createdAt
