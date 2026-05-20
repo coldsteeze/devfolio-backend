@@ -3,6 +3,7 @@ package korobkin.nikita.project_service.controller;
 import korobkin.nikita.project_service.docs.UserProjectControllerDocs;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.response.PagedResponse;
+import korobkin.nikita.project_service.dto.response.ProjectFavoriteResponse;
 import korobkin.nikita.project_service.dto.response.ProjectResponse;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
@@ -31,5 +32,12 @@ public class UserProjectController implements UserProjectControllerDocs {
             ProjectFilterRequest request,
             Pageable pageable) {
         return ResponseEntity.ok(projectService.getUserProjects(userId, currentUser, request, pageable));
+    }
+
+    @GetMapping("/me/favorites")
+    public ResponseEntity<PagedResponse<ProjectFavoriteResponse>> getUserProjectFavorites(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            Pageable pageable) {
+        return ResponseEntity.ok(projectService.getUserProjectFavorites(currentUser, pageable));
     }
 }

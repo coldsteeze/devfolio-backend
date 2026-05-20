@@ -16,6 +16,10 @@ public record ProjectFeedResponse(
                 example = "Portfolio Platform")
         String name,
 
+        @Schema(description = "User unique identifier",
+                example = "661b8411-e29b-41d4-a716-44665544123124")
+        UUID userId,
+
         @Schema(description = "Short project description for preview",
                 example = "Platform for developers to showcase projects")
         String shortDescription,

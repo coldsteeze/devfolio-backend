@@ -12,13 +12,16 @@ import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectFavorite;
 import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.kafka.producer.*;
+import korobkin.nikita.project_service.mapper.ProjectFavoriteMapper;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.mapper.SkillEventMapper;
+import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
 import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
@@ -57,6 +60,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final MediaErrorMapper mediaErrorMapper;
     private final ProjectImageProperties projectImageProperties;
     private final ProjectImageRepository projectImageRepository;
+    private final ProjectFavoriteRepository projectFavoriteRepository;
+    private final ProjectFavoriteMapper projectFavoriteMapper;
 
     @Override
     @Transactional
@@ -97,7 +102,9 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectDetailsResponse getProject(UUID projectId, UserPrincipal user) {
         Project project = getProjectOrThrow(projectId);
 
-        checkAccess(project, user.userId());
+        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
 
         log.info("Successfully get project with id {}", project.getId());
 
@@ -134,6 +141,9 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepository.delete(project);
         log.info("Successfully delete project with id {}", projectId);
+
+        int removedFavorites = projectFavoriteRepository.deleteAllByProjectId(projectId);
+        log.info("Cleaned {} favorites for project {}", removedFavorites, projectId);
 
         projectDeletedEventProducer.sendProjectDeleted(new ProjectDeletedEvent(projectId));
     }
@@ -317,6 +327,70 @@ public class ProjectServiceImpl implements ProjectService {
         safeDelete(url);
 
         projectImageRepository.delete(projectImage);
+    }
+
+    @Override
+    @Transactional
+    public ProjectFavoriteResponse addProjectFavorite(UUID projectId, UserPrincipal currentUser) {
+        log.info("Adding project {} to favorites for user {}", projectId, currentUser.userId());
+
+        UUID ownerId = projectRepository.findOwnerIdByProjectId(projectId)
+                .orElseThrow(() -> {
+                    log.warn("Project not found: projectId={}", projectId);
+                    return new ProjectNotFoundException(ErrorCode.PROJECT_NOT_FOUND);
+                });
+
+        if (ownerId.equals(currentUser.userId())) {
+            log.warn("Self-favorite blocked: userId={}, projectId={}", currentUser.userId(), projectId);
+            throw new SelfFavoriteNotAllowedException(ErrorCode.SELF_FAVORITE_NOT_ALLOWED);
+        }
+
+        boolean alreadyExists = projectFavoriteRepository.existsByProjectIdAndUserId(projectId, currentUser.userId());
+        if (alreadyExists) {
+            log.info("Project already in favorites: projectId={}, userId={}", projectId, currentUser.userId());
+            throw new ProjectAlreadyFavoritedException(ErrorCode.PROJECT_ALREADY_FAVORITED);
+        }
+
+        ProjectFavorite favorite = new ProjectFavorite();
+        favorite.setProjectId(projectId);
+        favorite.setUserId(currentUser.userId());
+
+        ProjectFavorite saved = projectFavoriteRepository.save(favorite);
+        log.info("Successfully added to favorites: favoriteId={}, projectId={}, userId={}",
+                saved.getId(), projectId, currentUser.userId());
+
+        return projectFavoriteMapper.toDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProjectFavorite(UUID projectId, UserPrincipal currentUser) {
+        log.info("Removing project {} from favorites for user {}", projectId, currentUser.userId());
+
+        ProjectFavorite favorite = projectFavoriteRepository
+                .findProjectFavoriteByProjectIdAndUserId(projectId, currentUser.userId())
+                .orElseThrow(() -> {
+                    log.warn("Favorite not found: projectId={}, userId={}", projectId, currentUser.userId());
+                    return new ProjectFavoriteNotFoundException(ErrorCode.PROJECT_FAVORITE_NOT_FOUND);
+                });
+
+        projectFavoriteRepository.delete(favorite);
+        log.info("Successfully removed from favorites: projectId={}, userId={}", projectId, currentUser.userId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<ProjectFavoriteResponse> getUserProjectFavorites(UserPrincipal currentUser, Pageable pageable) {
+        Page<ProjectFavoriteResponse> page = projectFavoriteRepository
+                .findProjectFavoritesByUserId(currentUser.userId(), pageable);
+
+        return new PagedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
     }
 
     private Project getProjectOrThrow(UUID projectId) {

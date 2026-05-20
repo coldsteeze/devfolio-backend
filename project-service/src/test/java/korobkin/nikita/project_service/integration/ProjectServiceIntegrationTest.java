@@ -23,6 +23,7 @@ import korobkin.nikita.project_service.fixtures.ProjectFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectRequestFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectSkillFixtures;
 import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
+import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
 import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
@@ -77,6 +78,8 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     private SkillEventProducer skillEventProducer;
 
     private UUID userId;
+    @Autowired
+    private ProjectFavoriteRepository projectFavoriteRepository;
 
     @BeforeEach
     void setUp() {
@@ -691,6 +694,80 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThrows(ProjectImageNotFoundException.class,
                 () -> projectService.deleteProjectPhoto(project.getId(), new UserPrincipal(userId), "wrong-url"));
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnProjectFavoriteResponse() {
+        Project project = createAndSaveProject();
+
+        UUID otherUserId = UUID.randomUUID();
+
+        ProjectFavoriteResponse projectFavoriteResponse = projectService.addProjectFavorite(
+                project.getId(), new UserPrincipal(otherUserId)
+        );
+
+        assertThat(projectFavoriteResponse.projectId()).isEqualTo(project.getId());
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnNotFound() {
+        assertThatThrownBy(() -> projectService.addProjectFavorite(
+                UUID.randomUUID(),
+                new UserPrincipal(userId)))
+                .isInstanceOf(ProjectNotFoundException.class)
+                .hasMessageContaining(ErrorCode.PROJECT_NOT_FOUND.message);
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnUnprocessableEntity() {
+        Project project = createAndSaveProject();
+
+        assertThatThrownBy(() -> projectService.addProjectFavorite(
+                project.getId(),
+                new UserPrincipal(userId)))
+                .isInstanceOf(SelfFavoriteNotAllowedException.class)
+                .hasMessageContaining(ErrorCode.SELF_FAVORITE_NOT_ALLOWED.message);
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnConflict() {
+        Project project = createAndSaveProject();
+
+        UUID otherUserId = UUID.randomUUID();
+
+        projectService.addProjectFavorite(
+                project.getId(), new UserPrincipal(otherUserId)
+        );
+
+        assertThatThrownBy(() -> projectService.addProjectFavorite(
+                project.getId(),
+                new UserPrincipal(otherUserId)))
+                .isInstanceOf(ProjectAlreadyFavoritedException.class)
+                .hasMessageContaining(ErrorCode.PROJECT_ALREADY_FAVORITED.message);
+    }
+
+    @Test
+    void deleteProjectFavorite_shouldReturnVoid() {
+        Project project = createAndSaveProject();
+
+        UUID otherUserId = UUID.randomUUID();
+
+        projectService.addProjectFavorite(
+                project.getId(), new UserPrincipal(otherUserId)
+        );
+
+        projectService.deleteProjectFavorite(project.getId(), new UserPrincipal(otherUserId));
+
+        assertTrue(projectFavoriteRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void deleteProjectFavorite_shouldReturnNotFound() {
+        assertThatThrownBy(() -> projectService.deleteProjectFavorite(
+                UUID.randomUUID(),
+                new UserPrincipal(userId)))
+                .isInstanceOf(ProjectFavoriteNotFoundException.class)
+                .hasMessageContaining(ErrorCode.PROJECT_FAVORITE_NOT_FOUND.message);
     }
 
     private Project createAndSaveProject() {

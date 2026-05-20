@@ -130,4 +130,19 @@ public class ProjectController implements ProjectControllerDocs {
         projectService.deleteProjectPhoto(projectId, currentUser, imageUrl);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{projectId}/favorites")
+    public ResponseEntity<ProjectFavoriteResponse> addProjectFavorite(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.addProjectFavorite(projectId, currentUser));
+    }
+
+    @DeleteMapping("/{projectId}/favorites")
+    public ResponseEntity<Void> deleteProjectFavorite(
+            @PathVariable("projectId") UUID projectId,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        projectService.deleteProjectFavorite(projectId, currentUser);
+        return ResponseEntity.noContent().build();
+    }
 }
