@@ -102,7 +102,9 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectDetailsResponse getProject(UUID projectId, UserPrincipal user) {
         Project project = getProjectOrThrow(projectId);
 
-        checkAccess(project, user.userId());
+        if (!project.isProjectPublic() && !project.getUserId().equals(user.userId())) {
+            throw new ProjectAccessDeniedException(ErrorCode.PROJECT_ACCESS_DENIED);
+        }
 
         log.info("Successfully get project with id {}", project.getId());
 
