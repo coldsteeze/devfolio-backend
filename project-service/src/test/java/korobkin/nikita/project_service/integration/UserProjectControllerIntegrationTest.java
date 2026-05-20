@@ -1,7 +1,9 @@
 package korobkin.nikita.project_service.integration;
 
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.fixtures.ProjectFavoriteFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectFixtures;
+import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,8 @@ public class UserProjectControllerIntegrationTest extends AbstractIntegrationTes
     private ProjectRepository projectRepository;
 
     private UUID userId;
+    @Autowired
+    private ProjectFavoriteRepository projectFavoriteRepository;
 
     @BeforeEach
     void setUp() {
@@ -123,7 +127,6 @@ public class UserProjectControllerIntegrationTest extends AbstractIntegrationTes
             projectRepository.save(ProjectFixtures.projectWithCustomName(userId, "Python Project " + i));
         }
 
-        // Запрашиваем первую страницу проектов с "Java"
         mockMvc.perform(get("/api/users/" + userId + "/projects")
                         .param("search", "Java")
                         .param("page", "0")
@@ -147,6 +150,21 @@ public class UserProjectControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         mockMvc.perform(get("/api/users/" + userId + "/projects")
+                        .with(auth(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(5));
+    }
+
+    @Test
+    void getUserProjectFavorites_shouldReturnOnlyCurrentProjectFavorites() throws Exception {
+        for (int i = 0; i< 5; i++) {
+            Project project = ProjectFixtures.validProject(UUID.randomUUID());
+            projectRepository.save(project);
+
+            projectFavoriteRepository.save(ProjectFavoriteFixtures.projectFavorite(userId, project.getId()));
+        }
+
+        mockMvc.perform(get("/api/users/me/favorites")
                         .with(auth(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(5));

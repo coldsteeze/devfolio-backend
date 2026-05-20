@@ -6,11 +6,14 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import korobkin.nikita.project_service.client.MediaClient;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.entity.Project;
+import korobkin.nikita.project_service.entity.ProjectFavorite;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.ErrorCode;
+import korobkin.nikita.project_service.fixtures.ProjectFavoriteFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectRequestFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectSkillFixtures;
+import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
@@ -65,6 +68,9 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProjectSkillRepository projectSkillRepository;
+
+    @Autowired
+    private ProjectFavoriteRepository projectFavoriteRepository;
 
     @MockitoBean
     private MediaClient mediaClient;
@@ -173,9 +179,9 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void updateProject_shouldReturnNotFound() throws Exception {
         mockMvc.perform(put("/api/projects/" + UUID.randomUUID())
-                .with(auth(userId))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json(ProjectRequestFixtures.updateProjectRequest(ProjectFixtures.validProject(userId)))))
+                        .with(auth(userId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(ProjectRequestFixtures.updateProjectRequest(ProjectFixtures.validProject(userId)))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_NOT_FOUND.name()))
                 .andExpect(jsonPath("$.message").value(ErrorCode.PROJECT_NOT_FOUND.message));
@@ -187,7 +193,7 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
         projectRepository.save(project);
 
         mockMvc.perform(get("/api/projects/" + project.getId())
-                .with(auth(userId)))
+                        .with(auth(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.project.id").value(project.getId().toString()))
                 .andExpect(jsonPath("$.project.name").value(project.getName()))
@@ -224,7 +230,7 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
         projectRepository.save(project);
 
         mockMvc.perform(delete("/api/projects/" + project.getId())
-                .with(auth(userId)))
+                        .with(auth(userId)))
                 .andExpect(status().isNoContent());
     }
 
@@ -258,15 +264,15 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
 
         stubFor(WireMock.get(urlPathEqualTo("/api/skills/" + skillId))
                 .willReturn(okJson("""
-            {
-                "id": "%s",
-                "name": "Java",
-                "category": "LANGUAGE"
-            }
-            """.formatted(skillId))));
+                        {
+                            "id": "%s",
+                            "name": "Java",
+                            "category": "LANGUAGE"
+                        }
+                        """.formatted(skillId))));
 
         mockMvc.perform(post("/api/projects/" + project.getId() + "/skills/" + projectSkill.getSkillId())
-                .with(auth(userId)))
+                        .with(auth(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.skillId").value(projectSkill.getSkillId().toString()))
                 .andExpect(jsonPath("$.confirmed").value(projectSkill.isConfirmed()))
@@ -563,6 +569,77 @@ public class ProjectControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("imageUrl", "http://test-url")
                         .with(auth(otherUser)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnProjectFavoriteResponse() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        UUID otherUser = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/favorites")
+                        .with(auth(otherUser)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.projectId").value(project.getId().toString()));
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnNotFound() throws Exception {
+        mockMvc.perform(post("/api/projects/" + UUID.randomUUID() + "/favorites")
+                        .with(auth(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.PROJECT_NOT_FOUND.message));
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnUnprocessableEntity() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/favorites")
+                        .with(auth(userId)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value(ErrorCode.SELF_FAVORITE_NOT_ALLOWED.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.SELF_FAVORITE_NOT_ALLOWED.message));
+    }
+
+    @Test
+    void addProjectFavorite_shouldReturnConflict() throws Exception {
+        Project project = ProjectFixtures.validProject(UUID.randomUUID());
+        projectRepository.save(project);
+
+        ProjectFavorite projectFavorite = ProjectFavoriteFixtures.projectFavorite(userId, project.getId());
+        projectFavoriteRepository.save(projectFavorite);
+
+        mockMvc.perform(post("/api/projects/" + project.getId() + "/favorites")
+                        .with(auth(userId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_ALREADY_FAVORITED.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.PROJECT_ALREADY_FAVORITED.message));
+    }
+
+    @Test
+    void deleteProjectFavorite_shouldReturnNoContent() throws Exception {
+        Project project = ProjectFixtures.validProject(userId);
+        projectRepository.save(project);
+
+        ProjectFavorite projectFavorite = ProjectFavoriteFixtures.projectFavorite(userId, project.getId());
+        projectFavoriteRepository.save(projectFavorite);
+
+        mockMvc.perform(delete("/api/projects/" + project.getId() + "/favorites")
+                        .with(auth(userId)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteProjectFavorite_shouldReturnNotFound() throws Exception {
+        mockMvc.perform(delete("/api/projects/" + UUID.randomUUID() + "/favorites")
+                        .with(auth(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(ErrorCode.PROJECT_FAVORITE_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.PROJECT_FAVORITE_NOT_FOUND.message));
     }
 
     private String json(Object o) throws JsonProcessingException {
