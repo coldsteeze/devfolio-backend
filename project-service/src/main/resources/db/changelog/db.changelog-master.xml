@@ -11,4 +11,7 @@
     <include file="db/changelog/changes/003_add_project_feed_fields.xml"/>
     <include file="db/changelog/changes/004_create_project_images_table.xml"/>
     <include file="db/changelog/changes/005_create_project_favorites_table.xml"/>
+    <include file="db/changelog/changes/006_create_project_likes_table.xml"/>
+    <include file="db/changelog/changes/007_create_project_views_table.xml"/>
+    <include file="db/changelog/changes/008_create_project_counters_table.xml"/>
 </databaseChangeLog>
