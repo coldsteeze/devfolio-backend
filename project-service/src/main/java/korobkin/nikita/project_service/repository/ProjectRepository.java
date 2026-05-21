@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -40,4 +41,16 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
 
     @Query("SELECT p.userId FROM Project p WHERE p.id = :projectId")
     Optional<UUID> findOwnerIdByProjectId(@Param("projectId") UUID projectId);
+
+    @Modifying
+    @Query("UPDATE Project p SET p.viewsCount = p.viewsCount + 1 WHERE p.id = :id")
+    void incrementViews(@Param("id") UUID projectId);
+
+    @Modifying
+    @Query("UPDATE Project p SET p.likesCount = p.likesCount + 1 WHERE p.id = :id")
+    void incrementLikes(@Param("id") UUID projectId);
+
+    @Modifying
+    @Query("UPDATE Project p SET p.likesCount = p.likesCount - 1 WHERE p.id = :id AND p.likesCount > 0")
+    void decrementLikes(@Param("id") UUID projectId);
 }
