@@ -54,6 +54,12 @@ public class Project {
             orphanRemoval = true)
     private List<ProjectImage> images = new ArrayList<>();
 
+    @Column(name = "views_count", nullable = false)
+    private Long viewsCount;
+
+    @Column(name = "likes_count", nullable = false)
+    private Long likesCount;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
