@@ -1,5 +1,6 @@
 package korobkin.nikita.project_service.controller;
 
+import korobkin.nikita.project_service.docs.ProjectInteractionControllerDocs;
 import korobkin.nikita.project_service.dto.response.LikeStatusResponse;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectInteractionService;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/projects/{projectId}")
-public class ProjectInteractionController {
+public class ProjectInteractionController implements ProjectInteractionControllerDocs {
 
     private final ProjectInteractionService projectInteractionService;
 
