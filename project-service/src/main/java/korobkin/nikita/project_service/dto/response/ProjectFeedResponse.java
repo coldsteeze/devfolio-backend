@@ -28,6 +28,12 @@ public record ProjectFeedResponse(
                 example = "https://cdn.example.com/projects/123/main.jpg")
         String mainImageUrl,
 
+        @Schema(example = "1", description = "Count views project")
+        Long viewsCount,
+
+        @Schema(example = "1", description = "Count likes project")
+        Long likesCount,
+
         @Schema(description = "Project creation timestamp",
                 example = "2026-03-01T12:00:00")
         LocalDateTime createdAt

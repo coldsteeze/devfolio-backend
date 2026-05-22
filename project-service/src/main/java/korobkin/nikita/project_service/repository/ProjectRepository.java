@@ -25,6 +25,8 @@ public interface ProjectRepository extends JpaRepository<Project, UUID>, JpaSpec
                            p.userId,
                            p.shortDescription,
                            p.mainImageUrl,
+                           p.viewsCount,
+                           p.likesCount,
                            p.createdAt
                        )
                        FROM Project p
