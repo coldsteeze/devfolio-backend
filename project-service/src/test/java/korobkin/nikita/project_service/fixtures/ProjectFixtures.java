@@ -43,6 +43,8 @@ public class ProjectFixtures {
         project.setDescription(description);
         project.setGithubUrl(githubUrl);
         project.setProjectPublic(projectPublic);
+        project.setLikesCount(0L);
+        project.setViewsCount(0L);
 
         return project;
     }
