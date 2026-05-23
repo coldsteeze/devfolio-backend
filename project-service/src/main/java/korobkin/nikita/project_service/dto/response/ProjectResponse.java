@@ -34,6 +34,12 @@ public record ProjectResponse(
         @Schema(example = "true", description = "Project visibility (true = public, false = private)")
         boolean projectPublic,
 
+        @Schema(example = "1", description = "Count views project")
+        Long viewsCount,
+
+        @Schema(example = "1", description = "Count likes project")
+        Long likesCount,
+
         @Schema(example = "2026-03-01T12:00:00", description = "Project creation timestamp")
         LocalDateTime createdAt,
 
