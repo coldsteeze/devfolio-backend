@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
 import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.exception.ApiError;
@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 import java.util.UUID;
@@ -227,65 +228,115 @@ public interface UserProfileControllerDocs {
     );
 
     @Operation(
-            summary = "Update my user profile avatar",
-            description = "Update my user profile avatar and return information about profile",
+            summary = "Upload a profile avatar photo",
+            description = "Uploads a photo",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
-                            description = "User profile avatar successfully updated",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = UserProfileResponse.class)
-                            )
+                            description = "Photo uploaded successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "Validation error",
+                            description = "Bad request",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiError.class),
-                                    examples = @ExampleObject(value = """
-                                            {
-                                              "status": 400,
-                                              "error": "Bad Request",
-                                              "message": "avatarUrl Avatar URL must be a valid URL",
-                                              "code": "VALIDATION_ERROR",
-                                              "path": "/api/profiles/me/avatar",
-                                              "timestamp": "2026-10-02T00:00:00"
-                                            }
-                                            """)
+                                    examples = {
+                                            @ExampleObject(name = "Invalid file type", value = """
+                                                        {
+                                                          "status": 400,
+                                                          "error": "Bad Request",
+                                                          "message": "Invalid image type",
+                                                          "code": "MEDIA_INVALID_TYPE",
+                                                          "path": "/api/profiles/me/avatar",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
                             )
                     ),
                     @ApiResponse(
                             responseCode = "404",
-                            description = "User profile not found",
+                            description = "Not Found",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = ApiError.class),
-                                    examples = @ExampleObject(value = """
-                                            {
-                                              "status": 404,
-                                              "error": "Not Found",
-                                              "message": "User with this id not found",
-                                              "code": "PROFILE_NOT_FOUND",
-                                              "path": "/api/profiles/me/avatar",
-                                              "timestamp": "2026-10-02T00:00:00"
-                                            }
-                                            """)
+                                    examples = {
+                                            @ExampleObject(name = "User profile not found", value = """
+                                                        {
+                                                          "status": 404,
+                                                          "error": "Not Found",
+                                                          "message": "User with this id not found",
+                                                          "code": "PROFILE_NOT_FOUND",
+                                                          "path": "/api/profiles/me/avatar",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
                             )
-                    )
+                    ),
+                    @ApiResponse(
+                            responseCode = "413",
+                            description = "Payload Too Large",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File size exceeds limit", value = """
+                                                        {
+                                                          "status": 413,
+                                                          "error": "Payload Too Large",
+                                                          "message": "Image too large",
+                                                          "code": "MEDIA_FILE_TOO_LARGE",
+                                                          "path": "/api/profiles/me/avatar",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
             }
     )
-    ResponseEntity<UserProfileResponse> updateProfileAvatar(
-            @RequestBody(
-                    description = "Update my user profile avatar",
-                    required = true,
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = UpdateUserProfileAvatarRequest.class)
-                    )
-            )
-            UpdateUserProfileAvatarRequest request,
+    ResponseEntity<MediaResponse> uploadUserProfileAvatar(
+            @Parameter MultipartFile file,
+            UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "Delete profile avatar photo",
+            description = "Deletes a photo",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Photo deleted successfully",
+                            content = @Content(schema = @Schema(implementation = MediaResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Not Found",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                    schema = @Schema(implementation = ApiError.class),
+                                    examples = {
+                                            @ExampleObject(name = "File not found", value = """
+                                                        {
+                                                          "status": 404,
+                                                          "error": "Not Found",
+                                                          "message": "This user profile does not have avatar",
+                                                          "code": "PROFILE_AVATAR_NOT_FOUND",
+                                                          "path": "/api/profiles/me/avatar",
+                                                          "timestamp": "2026-04-30T00:00:00"
+                                                        }
+                                                    """)
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error")
+            }
+    )
+    ResponseEntity<MediaResponse> deleteUserProfileAvatar(
             UserPrincipal principal
     );
 
