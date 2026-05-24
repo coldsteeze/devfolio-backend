@@ -15,7 +15,6 @@ public interface UserProfileMapper {
     UserProfileResponse toDto(UserProfile userProfile);
 
     @Mapping(target = "userId", ignore = true)
-    @Mapping(source = "skills", target = "skills")
     @Mapping(source = "links", target = "links")
     void updateEntityFromDto(UpdateUserProfileRequest request, @MappingTarget UserProfile user);
 

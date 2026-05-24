@@ -2,7 +2,8 @@ package korobkin.nikita.user_profile_service.integration;
 
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
-import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
+import korobkin.nikita.user_profile_service.client.MediaClient;
+import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenException;
@@ -11,20 +12,19 @@ import korobkin.nikita.user_profile_service.fixtures.UserProfileFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
 import korobkin.nikita.user_profile_service.kafka.producer.UserProfileDeletedEventProducer;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
+import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -36,6 +36,9 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     UserProfileDeletedEventProducer producer;
+
+    @MockitoBean
+    private MediaClient mediaClient;
 
     @Test
     void getProfile_success() {
@@ -65,8 +68,6 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(filledProfile.getFirstName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_FIRST_NAME);
         assertThat(filledProfile.getLastName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LAST_NAME);
         assertThat(filledProfile.getBio()).isEqualTo(UserProfileRequestFixtures.DEFAULT_BIO);
-        assertThat(filledProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.DEFAULT_AVATAR_URL);
-        assertThat(filledProfile.getSkills()).isEqualTo(UserProfileRequestFixtures.DEFAULT_SKILLS);
         assertThat(filledProfile.getLinks()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LINKS);
     }
 
@@ -88,104 +89,26 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(updatedProfile.getFirstName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_FIRST_NAME);
         assertThat(updatedProfile.getLastName()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LAST_NAME);
         assertThat(updatedProfile.getBio()).isEqualTo(UserProfileRequestFixtures.DEFAULT_BIO);
-        assertThat(updatedProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.DEFAULT_AVATAR_URL);
-        assertThat(updatedProfile.getSkills()).isEqualTo(UserProfileRequestFixtures.DEFAULT_SKILLS);
         assertThat(updatedProfile.getLinks()).isEqualTo(UserProfileRequestFixtures.DEFAULT_LINKS);
     }
 
     @Test
-    void updateAvatar_success() {
+    void uploadAvatar_success() {
         UserProfile profile = createProfile();
 
-        UserProfileResponse result = userProfileService.updateUserProfileAvatar(
-                profile.getUserId(),
-                UserProfileRequestFixtures.updateUserProfileAvatarRequest()
-        );
+        MultipartFile file = mock(MultipartFile.class);
 
-        UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
+        when(file.getOriginalFilename()).thenReturn("test.png");
+
+        MediaResponse response = new MediaResponse("http://localhost/file.png");
+
+        when(mediaClient.upload(any(), eq("user-profile/avatars")))
+                .thenReturn(response);
+
+        MediaResponse result = userProfileService.uploadUserProfileAvatar(file,
+                new UserPrincipal(profile.getUserId(), "test@mail.com"));
 
         assertThat(result).isNotNull();
-        assertThat(result.userId()).isEqualTo(profile.getUserId());
-        assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
-        assertThat(updatedAvatarProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.NEW_AVATAR_URL);
-    }
-
-    @Test
-    void updateAvatar_updatesUpdatedAt() {
-        UserProfile profile = createProfile();
-
-        UserProfileResponse result = userProfileService.updateUserProfileAvatar(
-                profile.getUserId(),
-                UserProfileRequestFixtures.updateUserProfileAvatarRequest()
-        );
-
-        UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
-
-        assertThat(result).isNotNull();
-        assertThat(result.userId()).isEqualTo(profile.getUserId());
-        assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
-        assertThat(updatedAvatarProfile.getAvatarUrl()).isEqualTo(UserProfileRequestFixtures.NEW_AVATAR_URL);
-        assertThat(updatedAvatarProfile.getUpdatedAt()).isNotNull();
-    }
-
-    @Test
-    void updateAvatar_otherFields_notUpdated() {
-        UserProfile profile = createProfile();
-
-        UserProfileResponse result = userProfileService.updateUserProfileAvatar(
-                profile.getUserId(),
-                UserProfileRequestFixtures.updateUserProfileAvatarRequest()
-        );
-
-        UserProfile updatedAvatarProfile = userProfileRepository.findById(profile.getUserId()).orElseThrow();
-
-        assertThat(result).isNotNull();
-        assertThat(result.userId()).isEqualTo(profile.getUserId());
-        assertThat(updatedAvatarProfile.getNickname()).isEqualTo(UserProfileFixtures.DEFAULT_NICKNAME);
-    }
-
-    @Test
-    void findProfiles_emptySkills_returnsAll() {
-        createProfile(UserProfileFixtures.FIRST_USER_NICKNAME);
-        createProfile(UserProfileFixtures.SECOND_USER_NICKNAME);
-
-        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
-
-        assertThat(result.content())
-                .extracting(UserProfileResponse::nickname)
-                .containsExactlyInAnyOrder(
-                        UserProfileFixtures.FIRST_USER_NICKNAME,
-                        UserProfileFixtures.SECOND_USER_NICKNAME
-                );
-    }
-
-    @Test
-    void findProfiles_withSkill_returnsMatching() {
-        createProfile(UserProfileFixtures.FIRST_USER_NICKNAME, Set.of(UserProfileFixtures.FIRST_USER_SKILL));
-        createProfile(UserProfileFixtures.SECOND_USER_NICKNAME, Set.of(UserProfileFixtures.SECOND_USER_SKILL));
-
-        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(
-                Set.of(UserProfileFixtures.FIRST_USER_SKILL),
-                PageRequest.of(0, 10)
-
-        );
-
-        assertThat(result.content())
-                .extracting(UserProfileResponse::nickname)
-                .containsExactly(UserProfileFixtures.FIRST_USER_NICKNAME);
-    }
-
-    @Test
-    void findProfiles_withPageable_returnsCorrectPage() {
-        UserProfile profile = createProfile();
-
-        PagedResponse<UserProfileResponse> result = userProfileService.findBySkills(new HashSet<>(), PageRequest.of(0, 10));
-
-        assertThat(result.pageNumber()).isEqualTo(0);
-        assertThat(result.pageSize()).isEqualTo(10);
-        assertThat(result.content())
-                .extracting(UserProfileResponse::userId)
-                .containsExactly(profile.getUserId());
     }
 
     @Test
@@ -276,16 +199,6 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         return userProfileRepository.save(profile);
-    }
-
-    private void createProfile(String nickname, Set<String> skills) {
-        UserProfile profile = UserProfileFixtures.builder()
-                .withUserId(UUID.randomUUID())
-                .withNickname(nickname)
-                .withSkills(skills)
-                .build();
-
-        userProfileRepository.save(profile);
     }
 }
 

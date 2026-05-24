@@ -7,6 +7,5 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
     <include file="db/changelog/changes/001_create_user_profiles_table.xml"/>
-    <include file="db/changelog/changes/002_create_profile_skills_table.xml"/>
-    <include file="db/changelog/changes/003_create_profile_links_table.xml"/>
+    <include file="/db/changelog/changes/002_create_profile_links_table.xml"/>
 </databaseChangeLog>

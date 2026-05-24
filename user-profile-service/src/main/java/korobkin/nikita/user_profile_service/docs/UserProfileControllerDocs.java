@@ -10,18 +10,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
-import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.exception.ApiError;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Set;
 import java.util.UUID;
 
 @Tag(name = "User profile", description = "Manage user profiles: get, fill, update, search, delete")
@@ -338,22 +334,6 @@ public interface UserProfileControllerDocs {
     )
     ResponseEntity<MediaResponse> deleteUserProfileAvatar(
             UserPrincipal principal
-    );
-
-    @Operation(
-            summary = "List profiles with filter skills",
-            description = "Fetch paginated profiles with filters skills",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "User profiles fetched successfully",
-                            content = @Content(schema = @Schema(implementation = PagedResponse.class))
-                    )
-            }
-    )
-    ResponseEntity<PagedResponse<UserProfileResponse>> searchProfilesBySkills(
-            @ParameterObject Set<String> skills,
-            @ParameterObject Pageable pageable
     );
 
     @Operation(

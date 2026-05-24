@@ -33,14 +33,6 @@ public class UserProfile {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @ElementCollection
-    @CollectionTable(
-            name = "profile_skills",
-            joinColumns = @JoinColumn(name = "user_id")
-    )
-    @Column(name = "skill", nullable = false)
-    private Set<String> skills = new HashSet<>();
-
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "profile_links",
