@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.fixtures;
 
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import lombok.experimental.UtilityClass;
 
 import java.util.Map;
@@ -19,7 +20,8 @@ public class UserProfileRequestFixtures {
             String firstName,
             String lastName,
             String bio,
-            Map<String, String> links
+            Map<String, String> links,
+            UserType type
             ) {
         UpdateUserProfileRequest request = new UpdateUserProfileRequest();
         request.setNickname(nickname);
@@ -27,6 +29,7 @@ public class UserProfileRequestFixtures {
         request.setLastName(lastName);
         request.setBio(bio);
         request.setLinks(links);
+        request.setUserType(type);
 
         return request;
     }
@@ -37,7 +40,8 @@ public class UserProfileRequestFixtures {
                 DEFAULT_FIRST_NAME,
                 DEFAULT_LAST_NAME,
                 DEFAULT_BIO,
-                DEFAULT_LINKS
+                DEFAULT_LINKS,
+                UserType.JOB_SEEKER
         );
     }
 }

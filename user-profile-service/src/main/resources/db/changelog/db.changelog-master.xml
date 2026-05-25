@@ -8,4 +8,5 @@
 
     <include file="db/changelog/changes/001_create_user_profiles_table.xml"/>
     <include file="/db/changelog/changes/002_create_profile_links_table.xml"/>
+    <include file="db/changelog/changes/003_add_user_type_to_profiles.xml"/>
 </databaseChangeLog>

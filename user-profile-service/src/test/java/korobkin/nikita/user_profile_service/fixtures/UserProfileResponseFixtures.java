@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.fixtures;
 
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +24,8 @@ public class UserProfileResponseFixtures {
                 DEFAULT_LAST_NAME,
                 DEFAULT_BIO,
                 DEFAULT_AVATAR_URL,
-                DEFAULT_LINKS
+                DEFAULT_LINKS,
+                UserType.JOB_SEEKER
         );
     }
 }

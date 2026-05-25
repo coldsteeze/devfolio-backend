@@ -3,6 +3,7 @@ package korobkin.nikita.user_profile_service.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,4 +33,7 @@ public class UpdateUserProfileRequest {
 
     @Schema(example = "{\"github\": \"https://github.com/nick\"}", description = "Social links")
     private Map<String, String> links;
+
+    @Schema(description = "User role in the platform", example = "JOB_SEEKER")
+    private UserType userType;
 }

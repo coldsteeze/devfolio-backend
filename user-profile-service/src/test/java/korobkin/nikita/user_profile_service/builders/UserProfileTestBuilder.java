@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.builders;
 
 import korobkin.nikita.user_profile_service.entity.UserProfile;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileFixtures;
 
 import java.util.*;
@@ -26,6 +27,7 @@ public class UserProfileTestBuilder {
         profile.setUserId(userId);
         profile.setNickname(nickname);
         profile.setLinks(links);
+        profile.setUserType(UserType.JOB_SEEKER);
         return profile;
     }
 }

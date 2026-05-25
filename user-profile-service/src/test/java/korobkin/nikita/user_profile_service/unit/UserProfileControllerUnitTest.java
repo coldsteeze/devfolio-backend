@@ -7,6 +7,7 @@ import korobkin.nikita.jwtsecuritystarter.security.jwt.JwtService;
 import korobkin.nikita.user_profile_service.controller.UserProfileController;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileResponseFixtures;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
@@ -132,7 +133,8 @@ public class UserProfileControllerUnitTest {
                 UserProfileResponseFixtures.DEFAULT_FIRST_NAME,
                 UserProfileResponseFixtures.DEFAULT_LAST_NAME,
                 UserProfileResponseFixtures.DEFAULT_BIO,
-                UserProfileRequestFixtures.DEFAULT_LINKS
+                UserProfileRequestFixtures.DEFAULT_LINKS,
+                UserType.JOB_SEEKER
         );
     }
 

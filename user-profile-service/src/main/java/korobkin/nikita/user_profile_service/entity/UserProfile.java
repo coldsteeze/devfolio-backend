@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.entity;
 
 import jakarta.persistence.*;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,10 @@ public class UserProfile {
 
     @Column(name = "avatar_url")
     private String avatarUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false)
+    private UserType userType;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(

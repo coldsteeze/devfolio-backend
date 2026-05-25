@@ -1,0 +1,2 @@
+ALTER TABLE user_profiles
+    ADD COLUMN user_type VARCHAR(20) NOT NULL DEFAULT 'JOB_SEEKER';

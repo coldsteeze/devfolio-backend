@@ -7,6 +7,8 @@ public record UserProfileUpdatedEvent(
         String nickname,
         String firstName,
         String lastName,
-        String bio
+        String bio,
+        String avatarUrl,
+        UserType userType
 ) {
 }
