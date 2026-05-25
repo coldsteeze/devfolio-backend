@@ -10,9 +10,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
+import korobkin.nikita.user_profile_service.dto.response.ProfileFeedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.exception.ApiError;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -344,4 +348,11 @@ public interface UserProfileControllerDocs {
             }
     )
     ResponseEntity<Void> deleteMyProfile(UserPrincipal principal);
+
+    @Operation(
+            summary = "Profile feed"
+    )
+    ResponseEntity<PagedResponse<ProfileFeedResponse>> getProfilesFeed(
+            @ParameterObject Pageable pageable
+    );
 }
