@@ -18,3 +18,7 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET}
   issuer: ${JWT_ISSUER}
+
+services:
+  media-service:
+    url: ${MEDIA_SERVICE_URL}

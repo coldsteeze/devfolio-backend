@@ -5,8 +5,8 @@
       http://www.liquibase.org/xml/ns/dbchangelog
       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="002" author="nikita.korobkin">
-        <sqlFile path="../sql/002_create_profile_skills_table.sql"
+    <changeSet id="003" author="nikita.korobkin">
+        <sqlFile path="../sql/003_add_user_type_to_profiles.sql"
                  relativeToChangelogFile="true"
                  splitStatements="true"
                  endDelimiter=";"/>

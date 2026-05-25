@@ -2,22 +2,23 @@ package korobkin.nikita.user_profile_service.controller;
 
 import jakarta.validation.Valid;
 import korobkin.nikita.user_profile_service.docs.UserProfileControllerDocs;
-import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
+import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
 import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
+import korobkin.nikita.user_profile_service.dto.response.ProfileFeedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -52,23 +53,29 @@ public class UserProfileController implements UserProfileControllerDocs {
         return ResponseEntity.ok(userProfileService.updateUserProfile(principal.userId(), request));
     }
 
-    @PatchMapping("/me/avatar")
-    public ResponseEntity<UserProfileResponse> updateProfileAvatar(
-            @Valid @RequestBody UpdateUserProfileAvatarRequest request,
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MediaResponse> uploadUserProfileAvatar(
+            @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(userProfileService.updateUserProfileAvatar(principal.userId(), request));
+        return ResponseEntity.ok(userProfileService.uploadUserProfileAvatar(file, principal));
     }
 
-    @GetMapping
-    public ResponseEntity<PagedResponse<UserProfileResponse>> searchProfilesBySkills(
-            @RequestParam("skills") Set<String> skills,
-            @PageableDefault(sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(userProfileService.findBySkills(skills, pageable));
+    @DeleteMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MediaResponse> deleteUserProfileAvatar(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        userProfileService.deleteUserProfileAvatar(principal);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteMyProfile(@AuthenticationPrincipal UserPrincipal principal) {
         userProfileService.deleteUserProfile(principal.userId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedResponse<ProfileFeedResponse>> getProfilesFeed(
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(userProfileService.getProfilesFeed(pageable));
     }
 }

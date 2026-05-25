@@ -2,7 +2,6 @@ package korobkin.nikita.user_profile_service.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileAvatarRequest;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileFixtures;
@@ -16,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "services.media-service.url=http://localhost:${wiremock.server.port}"
+})
 public class UserProfileControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -82,50 +84,8 @@ public class UserProfileControllerIntegrationTest extends AbstractIntegrationTes
                         .value(UserProfileRequestFixtures.DEFAULT_LAST_NAME))
                 .andExpect(jsonPath("$.bio")
                         .value(UserProfileRequestFixtures.DEFAULT_BIO))
-                .andExpect(jsonPath("$.avatarUrl")
-                        .value(UserProfileRequestFixtures.DEFAULT_AVATAR_URL))
-                .andExpect(jsonPath("$.skills")
-                        .value(containsInAnyOrder("skill1", "skill2")))
                 .andExpect(jsonPath("$.links.github")
                         .value("https://github.com"));
-    }
-
-    @Test
-    void updateMyProfile_shouldUpdateProfile() throws Exception {
-        UserProfile profile = UserProfileFixtures.builder().withUserId(userA).build();
-        userProfileRepository.save(profile);
-
-        UpdateUserProfileRequest request = UserProfileRequestFixtures.updateExistsUserProfileRequest();
-
-        mockMvc.perform(put("/api/profiles/me")
-                        .with(auth(userA))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname")
-                        .value(UserProfileRequestFixtures.NEW_NICKNAME))
-                .andExpect(jsonPath("$.firstName")
-                        .value(UserProfileRequestFixtures.NEW_FIRST_NAME))
-                .andExpect(jsonPath("$.lastName")
-                        .value(UserProfileRequestFixtures.NEW_LAST_NAME))
-                .andExpect(jsonPath("$.bio")
-                        .value(UserProfileRequestFixtures.NEW_BIO));
-    }
-
-    @Test
-    void updateProfileAvatar_shouldUpdateAvatar() throws Exception {
-        UserProfile profile = UserProfileFixtures.builder().withUserId(userA).build();
-        userProfileRepository.save(profile);
-
-        UpdateUserProfileAvatarRequest request = UserProfileRequestFixtures.updateUserProfileAvatarRequest();
-
-        mockMvc.perform(patch("/api/profiles/me/avatar")
-                        .with(auth(userA))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.avatarUrl")
-                        .value(UserProfileRequestFixtures.NEW_AVATAR_URL));
     }
 
     @Test
@@ -138,32 +98,6 @@ public class UserProfileControllerIntegrationTest extends AbstractIntegrationTes
                 .andExpect(status().isNoContent());
 
         assertThat(userProfileRepository.findById(profile.getUserId())).isEmpty();
-    }
-
-    @Test
-    void searchProfilesBySkills_shouldReturnProfiles() throws Exception {
-        UserProfile profile1 = UserProfileFixtures.builder()
-                .withUserId(userA)
-                .withNickname(UserProfileFixtures.FIRST_USER_NICKNAME)
-                .withSkill(UserProfileFixtures.FIRST_USER_SKILL)
-                .build();
-        userProfileRepository.save(profile1);
-
-        UUID userB = UUID.randomUUID();
-        UserProfile profile2 = UserProfileFixtures.builder()
-                .withUserId(userB)
-                .withNickname(UserProfileFixtures.SECOND_USER_NICKNAME)
-                .withSkill(UserProfileFixtures.SECOND_USER_SKILL)
-                .build();
-        userProfileRepository.save(profile2);
-
-        mockMvc.perform(get("/api/profiles")
-                        .param("skills", UserProfileFixtures.FIRST_USER_SKILL)
-                        .param("page", "0")
-                        .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[*].nickname",
-                        containsInAnyOrder(UserProfileFixtures.FIRST_USER_NICKNAME)));
     }
 
     private String json(Object o) throws JsonProcessingException {

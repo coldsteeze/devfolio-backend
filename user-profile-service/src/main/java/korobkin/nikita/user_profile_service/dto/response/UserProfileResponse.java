@@ -1,9 +1,9 @@
 package korobkin.nikita.user_profile_service.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Schema(description = "User profile response")
@@ -27,9 +27,9 @@ public record UserProfileResponse(
         @Schema(example = "http://avatar.url", description = "Valid avatar url")
         String avatarUrl,
 
-        @Schema(example = "[\"Java\", \"Spring\", \"SQL\"]", description = "User skills")
-        Set<String> skills,
-
         @Schema(example = "{\"github\": \"https://github.com/nick\"}", description = "Social links")
-        Map<String, String> links) {
+        Map<String, String> links,
+
+        @Schema(description = "User role in the platform", example = "JOB_SEEKER")
+        UserType userType) {
 }

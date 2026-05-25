@@ -3,12 +3,11 @@ package korobkin.nikita.user_profile_service.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.validator.constraints.URL;
 
 import java.util.Map;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -32,13 +31,9 @@ public class UpdateUserProfileRequest {
     @Schema(example = "My bio", description = "Valid bio")
     private String bio;
 
-    @URL(message = "Avatar URL must be a valid URL")
-    @Schema(example = "http://avatar.url", description = "Valid avatar url")
-    private String avatarUrl;
-
-    @Schema(example = "[\"Java\", \"Spring\", \"SQL\"]", description = "User skills")
-    private Set<String> skills;
-
     @Schema(example = "{\"github\": \"https://github.com/nick\"}", description = "Social links")
     private Map<String, String> links;
+
+    @Schema(description = "User role in the platform", example = "JOB_SEEKER")
+    private UserType userType;
 }

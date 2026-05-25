@@ -13,3 +13,7 @@ server:
 jwt:
   secret: my-dev-secret
   issuer: dev-issuer
+
+services:
+  media-service:
+    url: http://localhost:8086

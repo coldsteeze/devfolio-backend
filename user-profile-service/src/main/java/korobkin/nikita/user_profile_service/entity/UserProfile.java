@@ -1,6 +1,7 @@
 package korobkin.nikita.user_profile_service.entity;
 
 import jakarta.persistence.*;
+import korobkin.nikita.user_profile_service.entity.enums.UserType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -33,13 +34,9 @@ public class UserProfile {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @ElementCollection
-    @CollectionTable(
-            name = "profile_skills",
-            joinColumns = @JoinColumn(name = "user_id")
-    )
-    @Column(name = "skill", nullable = false)
-    private Set<String> skills = new HashSet<>();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false)
+    private UserType userType = UserType.JOB_SEEKER;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(

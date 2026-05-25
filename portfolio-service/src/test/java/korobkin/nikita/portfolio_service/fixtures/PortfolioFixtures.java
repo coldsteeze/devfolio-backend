@@ -1,5 +1,6 @@
 package korobkin.nikita.portfolio_service.fixtures;
 
+import korobkin.nikita.events.UserType;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import lombok.experimental.UtilityClass;
 
@@ -24,6 +25,7 @@ public class PortfolioFixtures {
         portfolio.setLastName(LAST_NAME);
         portfolio.setBio(BIO);
         portfolio.setTotalProjects((short) 0);
+        portfolio.setUserType(UserType.JOB_SEEKER);
         return portfolio;
     }
 
