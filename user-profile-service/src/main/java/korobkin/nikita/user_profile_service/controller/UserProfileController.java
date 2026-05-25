@@ -4,10 +4,14 @@ import jakarta.validation.Valid;
 import korobkin.nikita.user_profile_service.docs.UserProfileControllerDocs;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
+import korobkin.nikita.user_profile_service.dto.response.ProfileFeedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -67,5 +71,11 @@ public class UserProfileController implements UserProfileControllerDocs {
     public ResponseEntity<Void> deleteMyProfile(@AuthenticationPrincipal UserPrincipal principal) {
         userProfileService.deleteUserProfile(principal.userId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedResponse<ProfileFeedResponse>> getProfilesFeed(
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(userProfileService.getProfilesFeed(pageable));
     }
 }

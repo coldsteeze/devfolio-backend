@@ -3,8 +3,11 @@ package korobkin.nikita.user_profile_service.service;
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.user_profile_service.dto.request.UpdateUserProfileRequest;
 import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
+import korobkin.nikita.user_profile_service.dto.response.PagedResponse;
+import korobkin.nikita.user_profile_service.dto.response.ProfileFeedResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
@@ -24,4 +27,6 @@ public interface UserProfileService {
     MediaResponse uploadUserProfileAvatar(MultipartFile file, UserPrincipal principal);
 
     void deleteUserProfileAvatar(UserPrincipal principal);
+
+    PagedResponse<ProfileFeedResponse> getProfilesFeed(Pageable pageable);
 }

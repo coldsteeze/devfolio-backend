@@ -36,7 +36,7 @@ public class UserProfile {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type", nullable = false)
-    private UserType userType;
+    private UserType userType = UserType.JOB_SEEKER;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
