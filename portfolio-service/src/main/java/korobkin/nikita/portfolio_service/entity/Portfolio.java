@@ -1,6 +1,7 @@
 package korobkin.nikita.portfolio_service.entity;
 
 import jakarta.persistence.*;
+import korobkin.nikita.events.UserType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,13 @@ public class Portfolio {
 
     @Column(name = "bio")
     private String bio;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false)
+    private UserType userType;
 
     @Column(name = "total_projects")
     private short totalProjects;

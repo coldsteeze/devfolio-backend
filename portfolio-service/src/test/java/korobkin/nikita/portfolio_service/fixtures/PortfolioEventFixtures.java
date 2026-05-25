@@ -2,6 +2,7 @@ package korobkin.nikita.portfolio_service.fixtures;
 
 import korobkin.nikita.events.UserDeletedEvent;
 import korobkin.nikita.events.UserProfileUpdatedEvent;
+import korobkin.nikita.events.UserType;
 import lombok.experimental.UtilityClass;
 
 import java.util.UUID;
@@ -15,7 +16,9 @@ public class PortfolioEventFixtures {
                 "nick_" + UUID.randomUUID(),
                 "John",
                 "Doe",
-                "bio"
+                "bio",
+                "avatarUrl",
+                UserType.JOB_SEEKER
         );
     }
 
@@ -25,7 +28,9 @@ public class PortfolioEventFixtures {
                 "newNick",
                 "New",
                 "Name",
-                "newBio"
+                "newBio",
+                "avatarUrl",
+                UserType.JOB_SEEKER
         );
     }
 
