@@ -6,6 +6,10 @@ services:
       POSTGRES_USER: ${AUTH_SERVICE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${AUTH_SERVICE_POSTGRES_PASSWORD}
       POSTGRES_DB: ${AUTH_SERVICE_POSTGRES_DB}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
     ports:
       - "5432:5432"
     volumes:
@@ -18,6 +22,10 @@ services:
       POSTGRES_USER: ${PROFILE_SERVICE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${PROFILE_SERVICE_POSTGRES_PASSWORD}
       POSTGRES_DB: ${PROFILE_SERVICE_POSTGRES_DB}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
     ports:
       - "5433:5432"
     volumes:
@@ -98,10 +106,32 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
+  kafka-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+    ports:
+      - "8087:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      ENABLE_DEBEZIUM_SCRIPTING: "true"
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
-      - "8087:8080"
+      - "8088:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
