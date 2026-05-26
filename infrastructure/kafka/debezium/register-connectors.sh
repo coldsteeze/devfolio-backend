@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Registering auth connector..."
+
+curl -X POST http://localhost:8087/connectors \
+  -H "Content-Type: application/json" \
+  -d @./connectors/auth-outbox-connector.json
