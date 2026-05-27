@@ -5,7 +5,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import korobkin.nikita.events.UserCreatedEvent;
 import lombok.*;
 import org.hibernate.annotations.Type;
 
@@ -35,7 +34,7 @@ public class OutboxEvent {
 
     @Type(JsonBinaryType.class)
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
-    private UserCreatedEvent payload;
+    private String payload;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

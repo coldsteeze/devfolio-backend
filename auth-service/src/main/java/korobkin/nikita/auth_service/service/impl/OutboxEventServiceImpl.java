@@ -1,9 +1,10 @@
 package korobkin.nikita.auth_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import korobkin.nikita.auth_service.entity.OutboxEvent;
 import korobkin.nikita.auth_service.repository.OutboxEventRepository;
 import korobkin.nikita.auth_service.service.OutboxEventService;
-import korobkin.nikita.events.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,19 +19,25 @@ import java.util.UUID;
 public class OutboxEventServiceImpl implements OutboxEventService {
 
     private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
-    public void saveEvent(String aggregateType, UUID aggregateId, String eventType, UserCreatedEvent payload) {
-        OutboxEvent outboxEvent = OutboxEvent.builder()
-                .id(UUID.randomUUID())
-                .aggregateType(aggregateType)
-                .aggregateId(aggregateId)
-                .eventType(eventType)
-                .payload(payload)
-                .createdAt(Instant.now())
-                .build();
+    public void saveEvent(String aggregateType, UUID aggregateId, String eventType, Object payload) {
+        try {
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .id(UUID.randomUUID())
+                    .aggregateType(aggregateType)
+                    .aggregateId(aggregateId)
+                    .eventType(eventType)
+                    .payload(objectMapper.writeValueAsString(payload))
+                    .createdAt(Instant.now())
+                    .build();
 
-        outboxEventRepository.save(outboxEvent);
+            outboxEventRepository.save(outboxEvent);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
