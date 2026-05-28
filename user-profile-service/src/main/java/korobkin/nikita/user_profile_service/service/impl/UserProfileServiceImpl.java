@@ -15,7 +15,6 @@ import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenExcept
 import korobkin.nikita.user_profile_service.exception.UserProfileAvatarNotFoundException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.exception.media.MediaErrorMapper;
-import korobkin.nikita.user_profile_service.kafka.producer.UserProfileUpdatedEventProducer;
 import korobkin.nikita.user_profile_service.mapper.UserProfileMapper;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
@@ -39,7 +38,6 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
-    private final UserProfileUpdatedEventProducer userProfileUpdatedEventProducer;
     private final MediaClient mediaClient;
     private final MediaErrorMapper mediaErrorMapper;
     private final OutboxEventService outboxEventService;
@@ -69,7 +67,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfileRepository.save(userProfile);
         log.info("UserProfile with id: {} data has been filled in DB", userProfile.getUserId());
 
-        userProfileUpdatedEventProducer.sendUserProfileUpdated(
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                id,
+                "user-profile-updated",
                 userProfileMapper.toUpdatedEvent(userProfile)
         );
 
@@ -83,6 +84,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfile.setUpdatedAt(LocalDateTime.now());
         userProfileRepository.save(userProfile);
         log.info("UserProfile with id: {} data has been updated in DB", userProfile.getUserId());
+
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                id,
+                "user-profile-updated",
+                userProfileMapper.toUpdatedEvent(userProfile)
+        );
 
         return userProfileMapper.toDto(userProfile);
     }
@@ -130,6 +138,13 @@ public class UserProfileServiceImpl implements UserProfileService {
             }
         }
 
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                principal.userId(),
+                "user-profile-avatar-updated",
+                userProfileMapper.toAvatarUpdatedEvent(userProfile)
+        );
+
         return response;
     }
 
@@ -145,6 +160,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         safeDelete(userProfile.getAvatarUrl());
 
         userProfile.setAvatarUrl(null);
+
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                principal.userId(),
+                "user-profile-avatar-updated",
+                userProfileMapper.toAvatarUpdatedEvent(userProfile)
+        );
     }
 
     @Override
