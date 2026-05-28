@@ -15,4 +15,6 @@ public interface PortfolioService {
     PortfolioResponse getPortfolio(UUID userId);
 
     PortfolioResponse getMyPortfolio(UserPrincipal currentUser);
+
+    void updatePortfolioAvatar(UserProfileAvatarUpdatedEvent event);
 }

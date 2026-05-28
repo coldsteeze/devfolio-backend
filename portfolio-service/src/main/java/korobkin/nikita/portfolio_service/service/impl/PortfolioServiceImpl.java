@@ -1,6 +1,7 @@
 package korobkin.nikita.portfolio_service.service.impl;
 
 import korobkin.nikita.events.UserDeletedEvent;
+import korobkin.nikita.events.UserProfileAvatarUpdatedEvent;
 import korobkin.nikita.events.UserProfileUpdatedEvent;
 import korobkin.nikita.portfolio_service.dto.PortfolioResponse;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
@@ -49,6 +50,15 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Transactional(readOnly = true)
     public PortfolioResponse getMyPortfolio(UserPrincipal user) {
         return portfolioMapper.toResponse(getOrThrow(user.userId()));
+    }
+
+    @Override
+    @Transactional
+    public void updatePortfolioAvatar(UserProfileAvatarUpdatedEvent event) {
+        Portfolio portfolio = getOrThrow(event.userId());
+        portfolio.setAvatarUrl(event.avatarUrl());
+
+        log.info("Portfolio avatar updated: {}", event.userId());
     }
 
     private Portfolio getOrThrow(UUID userId) {
