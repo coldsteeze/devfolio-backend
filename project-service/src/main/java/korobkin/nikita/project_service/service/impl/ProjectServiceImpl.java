@@ -16,7 +16,6 @@ import korobkin.nikita.project_service.entity.ProjectFavorite;
 import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
 import korobkin.nikita.project_service.exception.*;
-import korobkin.nikita.project_service.kafka.producer.*;
 import korobkin.nikita.project_service.mapper.ProjectFavoriteMapper;
 import korobkin.nikita.project_service.mapper.ProjectMapper;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
@@ -25,6 +24,7 @@ import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
 import korobkin.nikita.project_service.repository.ProjectImageRepository;
 import korobkin.nikita.project_service.repository.ProjectRepository;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
+import korobkin.nikita.project_service.service.OutboxEventService;
 import korobkin.nikita.project_service.service.ProjectService;
 import korobkin.nikita.project_service.service.ProjectSkillService;
 import lombok.RequiredArgsConstructor;
@@ -49,12 +49,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final ProjectSkillService projectSkillService;
-    private final SkillEventProducer skillEventProducer;
     private final SkillEventMapper skillEventMapper;
-    private final ProjectCreatedEventProducer projectCreatedEventProducer;
-    private final ProjectUpdatedEventProducer projectUpdatedEventProducer;
-    private final ProjectDeletedEventProducer projectDeletedEventProducer;
-    private final ProjectSkillsUpdatedEventProducer projectSkillsUpdatedEventProducer;
     private final ProjectSkillMapper projectSkillMapper;
     private final MediaClient mediaClient;
     private final MediaErrorMapper mediaErrorMapper;
@@ -62,6 +57,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectImageRepository projectImageRepository;
     private final ProjectFavoriteRepository projectFavoriteRepository;
     private final ProjectFavoriteMapper projectFavoriteMapper;
+    private final OutboxEventService outboxEventService;
 
     @Override
     @Transactional
@@ -76,7 +72,12 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
         log.info("Project with id {} saved in repository", project.getId());
 
-        projectCreatedEventProducer.sendProjectCreated(projectMapper.toProjectCreatedEvent(project));
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-created",
+                projectMapper.toProjectCreatedEvent(project)
+        );
 
         return projectMapper.toDto(project);
     }
@@ -92,7 +93,12 @@ public class ProjectServiceImpl implements ProjectService {
         project.setUpdatedAt(LocalDateTime.now());
         log.info("Project with id {} updated successfully", project.getId());
 
-        projectUpdatedEventProducer.sendProjectUpdated(projectMapper.toProjectUpdatedEvent(project));
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-updated",
+                projectMapper.toProjectUpdatedEvent(project)
+        );
 
         return projectMapper.toDto(project);
     }
@@ -145,7 +151,12 @@ public class ProjectServiceImpl implements ProjectService {
         int removedFavorites = projectFavoriteRepository.deleteAllByProjectId(projectId);
         log.info("Cleaned {} favorites for project {}", removedFavorites, projectId);
 
-        projectDeletedEventProducer.sendProjectDeleted(new ProjectDeletedEvent(projectId));
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-deleted",
+                new ProjectDeletedEvent(UUID.randomUUID(), projectId)
+        );
     }
 
     @Override
@@ -179,9 +190,18 @@ public class ProjectServiceImpl implements ProjectService {
 
         System.out.println(projectSkills);
 
-        skillEventProducer.sendVerificationRequest(
-                new ProjectSkillVerificationRequestedEvent(
-                        projectId, project.getGithubUrl(), skillEventMapper.toEventList(projectSkills))
+        ProjectSkillVerificationRequestedEvent event = new ProjectSkillVerificationRequestedEvent(
+                UUID.randomUUID(),
+                projectId,
+                project.getGithubUrl(),
+                skillEventMapper.toEventList(projectSkills)
+        );
+
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project.skill.verification.requested",
+                event
         );
 
         return new VerificationResponse("VERIFICATION_REQUESTED");
@@ -209,11 +229,17 @@ public class ProjectServiceImpl implements ProjectService {
         List<ProjectSkillDto> skills = projectSkillMapper.toProjectSkillDto(project.getSkills());
 
         ProjectSkillsUpdatedEvent updatedEvent = new ProjectSkillsUpdatedEvent(
+                UUID.randomUUID(),
                 project.getId(),
                 skills
         );
 
-        projectSkillsUpdatedEventProducer.sendProjectSkillsUpdated(updatedEvent);
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-skills-updated",
+                updatedEvent
+        );
     }
 
     @Override
