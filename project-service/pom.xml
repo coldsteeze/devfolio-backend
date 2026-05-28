@@ -167,6 +167,12 @@
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-jackson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-62</artifactId>
+            <version>3.9.4</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
