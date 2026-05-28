@@ -15,11 +15,11 @@ import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenExcept
 import korobkin.nikita.user_profile_service.exception.UserProfileAvatarNotFoundException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.exception.media.MediaErrorMapper;
-import korobkin.nikita.user_profile_service.kafka.producer.UserProfileDeletedEventProducer;
 import korobkin.nikita.user_profile_service.kafka.producer.UserProfileUpdatedEventProducer;
 import korobkin.nikita.user_profile_service.mapper.UserProfileMapper;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
+import korobkin.nikita.user_profile_service.service.OutboxEventService;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +39,10 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
-    private final UserProfileDeletedEventProducer userProfileDeletedEventProducer;
     private final UserProfileUpdatedEventProducer userProfileUpdatedEventProducer;
     private final MediaClient mediaClient;
     private final MediaErrorMapper mediaErrorMapper;
+    private final OutboxEventService outboxEventService;
 
     @Override
     @Transactional
@@ -90,9 +90,21 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public void deleteUserProfile(UUID id) {
-        userProfileRepository.deleteById(id);
-        log.info("UserProfile with id: {} delete in DB", id);
-        userProfileDeletedEventProducer.sendUserDeleted(new UserDeletedEvent(id));
+        UserProfile profile = userProfileRepository.findById(id)
+                .orElseThrow(() -> new UserProfileNotFoundException(ErrorCode.PROFILE_NOT_FOUND));
+
+        userProfileRepository.delete(profile);
+
+        log.info("UserProfile with id: {} deleted", id);
+
+        UserDeletedEvent event = new UserDeletedEvent(UUID.randomUUID(), id);
+
+        outboxEventService.saveEvent(
+                "USER",
+                id,
+                "user-deleted",
+                event
+        );
     }
 
     @Override
