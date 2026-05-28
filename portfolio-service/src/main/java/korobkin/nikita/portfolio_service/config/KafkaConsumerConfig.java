@@ -1,8 +1,6 @@
 package korobkin.nikita.portfolio_service.config;
 
-import korobkin.nikita.events.UserDeletedEvent;
-import korobkin.nikita.events.UserProfileAvatarUpdatedEvent;
-import korobkin.nikita.events.UserProfileUpdatedEvent;
+import korobkin.nikita.events.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
@@ -65,5 +63,47 @@ public class KafkaConsumerConfig {
     userProfileAvatarUpdatedKafkaListenerContainerFactory() {
 
         return kafkaListenerContainerFactory(UserProfileAvatarUpdatedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectCreatedEvent>
+    projectCreatedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectCreatedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectDeletedEvent>
+    projectDeletedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectDeletedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectUpdatedEvent>
+    projectUpdatedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectUpdatedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectSkillAddedEvent>
+    projectSkillAddedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectSkillAddedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectSkillRemovedEvent>
+    projectSkillRemovedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectSkillRemovedEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectSkillsUpdatedEvent>
+    projectSkillsUpdatedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectSkillsUpdatedEvent.class);
     }
 }
