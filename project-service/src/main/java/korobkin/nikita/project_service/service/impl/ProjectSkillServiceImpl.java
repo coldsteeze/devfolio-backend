@@ -11,10 +11,9 @@ import korobkin.nikita.project_service.exception.ErrorCode;
 import korobkin.nikita.project_service.exception.ProjectSkillAlreadyExistsException;
 import korobkin.nikita.project_service.exception.ProjectSkillNotFoundException;
 import korobkin.nikita.project_service.exception.SkillNotFoundException;
-import korobkin.nikita.project_service.kafka.producer.ProjectSkillAddedEventProducer;
-import korobkin.nikita.project_service.kafka.producer.ProjectSkillRemovedEventProducer;
 import korobkin.nikita.project_service.mapper.ProjectSkillMapper;
 import korobkin.nikita.project_service.repository.ProjectSkillRepository;
+import korobkin.nikita.project_service.service.OutboxEventService;
 import korobkin.nikita.project_service.service.ProjectSkillService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +31,7 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
     private final ProjectSkillRepository projectSkillRepository;
     private final ProjectSkillMapper projectSkillMapper;
     private final SkillClient skillClient;
-    private final ProjectSkillAddedEventProducer projectSkillAddedEventProducer;
-    private final ProjectSkillRemovedEventProducer projectSkillRemovedEventProducer;
+    private final OutboxEventService outboxEventService;
 
     @Override
     public ProjectSkillResponse addForProject(Project project, UUID skillId, boolean manuallyAdded) {
@@ -50,7 +48,10 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
             projectSkillRepository.saveAndFlush(projectSkill);
             log.info("Project skill with id {} saved in repository", projectSkill.getId());
 
-            projectSkillAddedEventProducer.sendProjectSkillAdded(
+            outboxEventService.saveEvent(
+                    "PROJECT",
+                    project.getId(),
+                    "project-skill-added",
                     projectSkillMapper.toProjectSkillAddedEvent(projectSkill)
             );
 
@@ -70,8 +71,17 @@ public class ProjectSkillServiceImpl implements ProjectSkillService {
         projectSkillRepository.delete(projectSkill);
         log.info("Successfully delete skill for project with id {}", project.getId());
 
-        projectSkillRemovedEventProducer.sendProjectSkillRemoved(
-                new ProjectSkillRemovedEvent(projectSkill.getProject().getId(), projectSkill.getSkillName())
+        ProjectSkillRemovedEvent event = new ProjectSkillRemovedEvent(
+                UUID.randomUUID(),
+                projectSkill.getProject().getId(),
+                projectSkill.getSkillName()
+        );
+
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-skill-removed",
+                event
         );
     }
 
