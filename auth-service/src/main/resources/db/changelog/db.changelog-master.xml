@@ -9,4 +9,5 @@
     <include file="db/changelog/changes/001_create_users_table.xml"/>
     <include file="db/changelog/changes/002_add_roles_column_to_users.xml"/>
     <include file="db/changelog/changes/003_create_outbox_events_table.xml"/>
+    <include file="db/changelog/changes/004_create_processed_events_table.xml"/>
 </databaseChangeLog>
