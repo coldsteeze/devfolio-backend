@@ -50,6 +50,10 @@ services:
       POSTGRES_USER: ${PROJECT_SERVICE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${PROJECT_SERVICE_POSTGRES_PASSWORD}
       POSTGRES_DB: ${PROJECT_SERVICE_POSTGRES_DB}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
     ports:
       - "5435:5432"
     volumes:
