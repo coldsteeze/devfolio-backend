@@ -1,6 +1,6 @@
 package korobkin.nikita.portfolio_service.kafka.consumer.user;
 
-import korobkin.nikita.events.UserProfileUpdatedEvent;
+import korobkin.nikita.events.UserProfileAvatarUpdatedEvent;
 import korobkin.nikita.portfolio_service.service.PortfolioService;
 import korobkin.nikita.portfolio_service.service.ProcessedEventService;
 import lombok.RequiredArgsConstructor;
@@ -11,21 +11,21 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class UserProfileUpdatedListener {
+public class UserProfileAvatarUpdatedListener {
 
     private final PortfolioService portfolioService;
     private final ProcessedEventService processedEventService;
 
     @KafkaListener(
-            topics = "#{@kafkaTopicProperties.userProfileUpdated}",
-            containerFactory = "userProfileUpdatedKafkaListenerContainerFactory"
+            topics = "#{@kafkaTopicProperties.userProfileAvatarUpdated}",
+            containerFactory = "userProfileAvatarUpdatedKafkaListenerContainerFactory"
     )
-    public void handleUserProfileUpdated(UserProfileUpdatedEvent event) {
-        log.info("received UserProfileUpdatedEvent: {}", event);
+    public void handleUserProfileUpdated(UserProfileAvatarUpdatedEvent event) {
+        log.info("received UserProfileAvatarUpdatedEvent: {}", event);
 
         processedEventService.process(
                 event.eventId(),
-                () -> portfolioService.createPortfolio(event)
+                () -> portfolioService.updatePortfolioAvatar(event)
         );
     }
 }
