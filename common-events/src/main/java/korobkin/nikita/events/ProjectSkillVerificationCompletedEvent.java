@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ProjectSkillVerificationCompletedEvent(
+        UUID eventId,
         UUID projectId,
         List<SkillVerificationResult> results
 ) {}
