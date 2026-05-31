@@ -66,6 +66,10 @@ services:
       POSTGRES_USER: ${SKILL_VERIFICATION_SERVICE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${SKILL_VERIFICATION_SERVICE_POSTGRES_PASSWORD}
       POSTGRES_DB: ${SKILL_VERIFICATION_SERVICE_POSTGRES_DB}
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=logical"
     ports:
       - "5436:5432"
     volumes:

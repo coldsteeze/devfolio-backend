@@ -17,3 +17,9 @@ echo "Registering project connector..."
 curl -X POST http://localhost:8087/connectors \
   -H "Content-Type: application/json" \
   -d @./connectors/project-outbox-connector.json
+
+echo "Registering verification connector..."
+
+curl -X POST http://localhost:8087/connectors \
+  -H "Content-Type: application/json" \
+  -d @./connectors/verification-outbox-connector.json
