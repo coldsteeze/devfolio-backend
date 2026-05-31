@@ -16,4 +16,5 @@
     <include file="db/changelog/changes/008_create_project_counters_table.xml"/>
     <include file="db/changelog/changes/009_add_project_interaction_foreign_keys.xml"/>
     <include file="db/changelog/changes/010_create_outbox_events_table.xml"/>
+    <include file="db/changelog/changes/011_create_processed_events_table.xml"/>
 </databaseChangeLog>
