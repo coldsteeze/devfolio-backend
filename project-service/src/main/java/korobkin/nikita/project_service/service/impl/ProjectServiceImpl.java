@@ -180,15 +180,13 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public VerificationResponse verifySkillProject(UUID projectId, UserPrincipal user) {
         Project project = getProjectOrThrow(projectId);
 
         checkAccess(project, user.userId());
 
         List<ProjectSkill> projectSkills = project.getSkills();
-
-        System.out.println(projectSkills);
 
         ProjectSkillVerificationRequestedEvent event = new ProjectSkillVerificationRequestedEvent(
                 UUID.randomUUID(),

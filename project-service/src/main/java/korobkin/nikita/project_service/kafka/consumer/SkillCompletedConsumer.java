@@ -1,11 +1,15 @@
 package korobkin.nikita.project_service.kafka.consumer;
 
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
+import korobkin.nikita.project_service.entity.ProcessedEvent;
+import korobkin.nikita.project_service.repository.ProcessedEventRepository;
 import korobkin.nikita.project_service.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class SkillCompletedConsumer {
 
     private final ProjectService projectService;
+    private final ProcessedEventRepository processedEventRepository;
 
     @KafkaListener(
             topics = "#{@kafkaTopicProperties.projectSkillVerificationCompleted}",
@@ -20,6 +25,30 @@ public class SkillCompletedConsumer {
     )
     public void handleSkillVerificationCompleted(ProjectSkillVerificationCompletedEvent event) {
         log.info("received ProjectSkillVerificationCompletedEvent: {}", event);
+
+        if (processedEventRepository.existsById(event.eventId())) {
+
+            log.info(
+                    "event already processed: {}",
+                    event.eventId()
+            );
+
+            return;
+        }
+
         projectService.confirmSkillProject(event);
+
+        ProcessedEvent processedEvent =
+                ProcessedEvent.builder()
+                        .eventId(event.eventId())
+                        .processedAt(Instant.now())
+                        .build();
+
+        processedEventRepository.save(processedEvent);
+
+        log.info(
+                "event processed successfully: {}",
+                event.eventId()
+        );
     }
 }
