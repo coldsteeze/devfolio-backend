@@ -7,4 +7,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <include file="db/changelog/changes/001_create_verified_skills_table.xml"/>
+    <include file="db/changelog/changes/002_create_outbox_events_table.xml"/>
+    <include file="db/changelog/changes/003_create_processed_events_table.xml"/>
 </databaseChangeLog>
