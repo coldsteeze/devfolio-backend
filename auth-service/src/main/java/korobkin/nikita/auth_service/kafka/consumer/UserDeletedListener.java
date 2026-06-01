@@ -24,31 +24,30 @@ public class UserDeletedListener {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleUserDeleted(UserDeletedEvent event) {
-        log.info("received UserDeletedEvent: {}", event);
+
+        log.info("Received UserDeletedEvent eventId={}, userId={}",
+                event.eventId(), event.userId());
 
         if (processedEventRepository.existsById(event.eventId())) {
-
-            log.info(
-                    "event already processed: {}",
-                    event.eventId()
-            );
-
+            log.warn("Duplicate UserDeletedEvent ignored eventId={}", event.eventId());
             return;
         }
 
-        authService.deleteUser(event);
+        try {
+            authService.deleteUser(event);
 
-        ProcessedEvent processedEvent =
-                ProcessedEvent.builder()
-                        .eventId(event.eventId())
-                        .processedAt(Instant.now())
-                        .build();
+            processedEventRepository.save(
+                    ProcessedEvent.builder()
+                            .eventId(event.eventId())
+                            .processedAt(Instant.now())
+                            .build()
+            );
 
-        processedEventRepository.save(processedEvent);
+            log.info("UserDeletedEvent processed successfully eventId={}", event.eventId());
 
-        log.info(
-                "event processed successfully: {}",
-                event.eventId()
-        );
+        } catch (Exception ex) {
+            log.error("Failed to process UserDeletedEvent eventId={}", event.eventId(), ex);
+            throw ex;
+        }
     }
 }
