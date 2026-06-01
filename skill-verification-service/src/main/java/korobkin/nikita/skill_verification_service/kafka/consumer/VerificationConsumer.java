@@ -21,32 +21,30 @@ public class VerificationConsumer {
 
     @KafkaListener(topics = "#{@kafkaTopicProperties.projectSkillVerificationRequested}")
     public void handle(ProjectSkillVerificationRequestedEvent event) {
-        log.info("Received verification request: projectId={}, skills={}",
+
+        log.info("Received VerificationRequestedEvent: projectId={}, skills={}",
                 event.projectId(), event.skills().size());
 
         if (processedEventRepository.existsById(event.eventId())) {
-
-            log.info(
-                    "event already processed: {}",
-                    event.eventId()
-            );
-
+            log.warn("Duplicate VerificationRequestedEvent ignored eventId={}", event.eventId());
             return;
         }
 
-        service.verify(event);
+        try {
+            service.verify(event);
 
-        ProcessedEvent processedEvent =
-                ProcessedEvent.builder()
-                        .eventId(event.eventId())
-                        .processedAt(Instant.now())
-                        .build();
+            ProcessedEvent processedEvent =
+                    ProcessedEvent.builder()
+                            .eventId(event.eventId())
+                            .processedAt(Instant.now())
+                            .build();
 
-        processedEventRepository.save(processedEvent);
+            processedEventRepository.save(processedEvent);
 
-        log.info(
-                "event processed successfully: {}",
-                event.eventId()
-        );
+            log.info("VerificationRequestedEvent processed successfully eventId={}", event.eventId());
+        }  catch (Exception ex) {
+            log.error("Failed to process VerificationRequestedEvent eventId={}", event.eventId(), ex);
+            throw ex;
+        }
     }
 }
