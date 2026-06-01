@@ -1,16 +1,16 @@
 package korobkin.nikita.user_profile_service.integration;
 
 import korobkin.nikita.events.UserCreatedEvent;
-import korobkin.nikita.events.UserDeletedEvent;
 import korobkin.nikita.user_profile_service.client.MediaClient;
 import korobkin.nikita.user_profile_service.dto.response.MediaResponse;
 import korobkin.nikita.user_profile_service.dto.response.UserProfileResponse;
+import korobkin.nikita.user_profile_service.entity.OutboxEvent;
 import korobkin.nikita.user_profile_service.entity.UserProfile;
 import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileFixtures;
 import korobkin.nikita.user_profile_service.fixtures.UserProfileRequestFixtures;
-import korobkin.nikita.user_profile_service.kafka.producer.UserProfileDeletedEventProducer;
+import korobkin.nikita.user_profile_service.repository.OutboxEventRepository;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
@@ -22,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -34,8 +33,8 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
-    @MockitoBean
-    UserProfileDeletedEventProducer producer;
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
 
     @MockitoBean
     private MediaClient mediaClient;
@@ -115,21 +114,34 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
     void deleteProfile_success() {
         UserProfile profile = createProfile();
 
-        assertThat(userProfileRepository.findById(profile.getUserId())).isNotNull();
         userProfileService.deleteUserProfile(profile.getUserId());
 
-        assertThat(userProfileRepository.findById(profile.getUserId())).isEmpty();
+        assertThat(userProfileRepository.findById(profile.getUserId()))
+                .isEmpty();
+
+        assertThat(outboxEventRepository.findAll())
+                .hasSize(1);
+
+        OutboxEvent event = outboxEventRepository.findAll().get(0);
+
+        assertThat(event.getAggregateType())
+                .isEqualTo("USER");
+        assertThat(event.getAggregateId())
+                .isEqualTo(profile.getUserId());
+        assertThat(event.getEventType())
+                .isEqualTo("user-deleted");
     }
 
     @Test
-    void deleteProfile_notExists_doesNothing() {
+    void deleteProfile_notExists_shouldThrowException() {
         UUID nonExistentUserId = UUID.randomUUID();
 
-        assertThatCode(() -> userProfileService.deleteUserProfile(nonExistentUserId))
-                .doesNotThrowAnyException();
+        assertThatThrownBy(() ->
+                userProfileService.deleteUserProfile(nonExistentUserId))
+                .isInstanceOf(UserProfileNotFoundException.class);
 
-        assertThat(userProfileRepository.findById(nonExistentUserId)).isNotPresent();
-        verify(producer).sendUserDeleted(new UserDeletedEvent(nonExistentUserId));
+        assertThat(outboxEventRepository.findAll())
+                .isEmpty();
     }
 
     @Test
@@ -167,21 +179,11 @@ public class UserProfileServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createEmptyProfile_onUserCreatedEvent_success() {
-        UserCreatedEvent userCreatedEvent = new UserCreatedEvent(UUID.randomUUID());
+        UserCreatedEvent userCreatedEvent = new UserCreatedEvent(UUID.randomUUID(), UUID.randomUUID());
 
         userProfileService.createUserEmptyProfile(userCreatedEvent);
 
         assertThat(userProfileRepository.findById(userCreatedEvent.userId())).isPresent();
-    }
-
-    @Test
-    void deleteProfile_onDeleteEvent_success() {
-        UserProfile userProfile = createProfile();
-
-        userProfileService.deleteUserProfile(userProfile.getUserId());
-
-        verify(producer).sendUserDeleted(new UserDeletedEvent(userProfile.getUserId()));
-        assertThat(userProfileRepository.findById(userProfile.getUserId())).isEmpty();
     }
 
     private UserProfile createProfile() {
