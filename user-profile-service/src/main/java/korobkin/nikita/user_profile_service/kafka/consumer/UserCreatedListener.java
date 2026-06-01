@@ -26,32 +26,32 @@ public class UserCreatedListener {
     )
     @Transactional
     public void handleUserCreated(UserCreatedEvent event) {
-        log.info("received UserCreatedEvent: {}", event);
+
+        log.info("Received UserCreatedEvent eventId={}, userId={}",
+                event.eventId(), event.userId());
 
         if (processedEventRepository.existsById(event.eventId())) {
-
-            log.info(
-                    "event already processed: {}",
-                    event.eventId()
-            );
-
+            log.warn("Duplicate UserCreatedEvent ignored eventId={}", event.eventId());
             return;
         }
 
-        userProfileService.createUserEmptyProfile(event);
+        try {
+            userProfileService.createUserEmptyProfile(event);
 
-        ProcessedEvent processedEvent =
-                ProcessedEvent.builder()
-                        .eventId(event.eventId())
-                        .processedAt(Instant.now())
-                        .build();
+            ProcessedEvent processedEvent =
+                    ProcessedEvent.builder()
+                            .eventId(event.eventId())
+                            .processedAt(Instant.now())
+                            .build();
 
-        processedEventRepository.save(processedEvent);
+            processedEventRepository.save(processedEvent);
 
-        log.info(
-                "event processed successfully: {}",
-                event.eventId()
-        );
+            log.info("UserCreatedEvent processed successfully eventId={}", event.eventId());
+
+        } catch (Exception ex) {
+            log.error("Failed to process UserCreatedEvent eventId={}", event.eventId(), ex);
+            throw ex;
+        }
     }
 }
 
