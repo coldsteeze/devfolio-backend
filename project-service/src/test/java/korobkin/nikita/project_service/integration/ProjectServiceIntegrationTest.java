@@ -3,17 +3,16 @@ package korobkin.nikita.project_service.integration;
 import feign.FeignException;
 import feign.Request;
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
-import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
 import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.client.MediaClient;
 import korobkin.nikita.project_service.client.SkillClient;
-import korobkin.nikita.project_service.config.ProjectImageProperties;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
 import korobkin.nikita.project_service.dto.response.skill.SkillResponse;
+import korobkin.nikita.project_service.entity.OutboxEvent;
 import korobkin.nikita.project_service.entity.Project;
 import korobkin.nikita.project_service.entity.ProjectImage;
 import korobkin.nikita.project_service.entity.ProjectSkill;
@@ -22,22 +21,16 @@ import korobkin.nikita.project_service.exception.*;
 import korobkin.nikita.project_service.fixtures.ProjectFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectRequestFixtures;
 import korobkin.nikita.project_service.fixtures.ProjectSkillFixtures;
-import korobkin.nikita.project_service.kafka.producer.SkillEventProducer;
-import korobkin.nikita.project_service.repository.ProjectFavoriteRepository;
-import korobkin.nikita.project_service.repository.ProjectImageRepository;
-import korobkin.nikita.project_service.repository.ProjectRepository;
-import korobkin.nikita.project_service.repository.ProjectSkillRepository;
+import korobkin.nikita.project_service.repository.*;
 import korobkin.nikita.project_service.security.user.UserPrincipal;
 import korobkin.nikita.project_service.service.ProjectService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
@@ -63,10 +56,13 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     private ProjectSkillRepository projectSkillRepository;
 
     @Autowired
-    private ProjectImageProperties projectImageProperties;
+    private ProjectImageRepository projectImageRepository;
 
     @Autowired
-    private ProjectImageRepository projectImageRepository;
+    private ProjectFavoriteRepository projectFavoriteRepository;
+
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
 
     @MockitoBean
     private SkillClient skillClient;
@@ -74,12 +70,7 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private MediaClient mediaClient;
 
-    @MockitoSpyBean
-    private SkillEventProducer skillEventProducer;
-
     private UUID userId;
-    @Autowired
-    private ProjectFavoriteRepository projectFavoriteRepository;
 
     @BeforeEach
     void setUp() {
@@ -96,6 +87,10 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
                 new UserPrincipal(userId)
         );
 
+        List<OutboxEvent> events = outboxEventRepository.findAll();
+
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).getEventType()).isEqualTo("project-created");
         assertThat(projectResponse.name()).isEqualTo(project.getName());
         assertThat(projectResponse.description()).isEqualTo(project.getDescription());
         assertThat(projectResponse.githubUrl()).isEqualTo(project.getGithubUrl());
@@ -125,6 +120,9 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
                 new UserPrincipal(userId)
         );
 
+        assertThat(outboxEventRepository.findAll())
+                .extracting(OutboxEvent::getEventType)
+                .contains("project-updated");
         assertThat(projectResponse.name()).isEqualTo(updatedProject.getName());
         assertThat(projectResponse.description()).isEqualTo(updatedProject.getDescription());
         assertThat(projectResponse.githubUrl()).isEqualTo(updatedProject.getGithubUrl());
@@ -327,9 +325,28 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     void deleteProject_shouldUpdateDatabase() {
         Project project = createAndSaveProject();
 
-        projectService.deleteProject(project.getId(), new UserPrincipal(userId));
+        projectService.deleteProject(
+                project.getId(),
+                new UserPrincipal(userId)
+        );
 
-        assertThat(projectRepository.existsByName(project.getName())).isFalse();
+        assertThat(projectRepository.findById(project.getId()))
+                .isEmpty();
+
+        List<OutboxEvent> events = outboxEventRepository.findAll();
+
+        assertThat(events).hasSize(1);
+
+        OutboxEvent event = events.get(0);
+
+        assertThat(event.getAggregateType())
+                .isEqualTo("PROJECT");
+
+        assertThat(event.getAggregateId())
+                .isEqualTo(project.getId());
+
+        assertThat(event.getEventType())
+                .isEqualTo("project-deleted");
     }
 
     @Test
@@ -476,16 +493,31 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         UUID skillId = UUID.randomUUID();
         createAndSaveProjectSkill(project, skillId);
 
-        when(skillClient.getSkillById(skillId)).thenReturn(new SkillResponse(skillId, "Java", SkillCategory.LANGUAGE));
+        when(skillClient.getSkillById(skillId))
+                .thenReturn(new SkillResponse(skillId, "Java", SkillCategory.LANGUAGE));
 
         VerificationResponse verificationResponse = projectService.verifySkillProject(
                 project.getId(),
                 new UserPrincipal(userId)
         );
 
-        assertThat(verificationResponse.status()).isEqualTo("VERIFICATION_REQUESTED");
+        assertThat(verificationResponse.status())
+                .isEqualTo("VERIFICATION_REQUESTED");
 
-        Mockito.verify(skillEventProducer).sendVerificationRequest(any(ProjectSkillVerificationRequestedEvent.class));
+        List<OutboxEvent> events = outboxEventRepository.findAll();
+
+        assertThat(events).hasSize(1);
+
+        OutboxEvent event = events.get(0);
+
+        assertThat(event.getAggregateType())
+                .isEqualTo("PROJECT");
+
+        assertThat(event.getAggregateId())
+                .isEqualTo(project.getId());
+
+        assertThat(event.getEventType())
+                .isEqualTo("project.skill.verification.requested");
     }
 
     @Test
@@ -517,11 +549,32 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
         projectService.confirmSkillProject(
                 new ProjectSkillVerificationCompletedEvent(
+                        UUID.randomUUID(),
                         project.getId(),
-                        List.of(new SkillVerificationResult(projectSkill.getId(), true)))
+                        List.of(new SkillVerificationResult(projectSkill.getId(), true))
+                )
         );
 
-        assertThat(projectSkill.isConfirmed()).isTrue();
+        ProjectSkill updatedSkill = projectSkillRepository
+                .findById(projectSkill.getId())
+                .orElseThrow();
+
+        assertThat(updatedSkill.isConfirmed()).isTrue();
+
+        List<OutboxEvent> events = outboxEventRepository.findAll();
+
+        assertThat(events).hasSize(1);
+
+        OutboxEvent event = events.get(0);
+
+        assertThat(event.getAggregateType())
+                .isEqualTo("PROJECT");
+
+        assertThat(event.getAggregateId())
+                .isEqualTo(project.getId());
+
+        assertThat(event.getEventType())
+                .isEqualTo("project-skills-updated");
     }
 
     @Test
@@ -533,6 +586,7 @@ public class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
         projectService.confirmSkillProject(
                 new ProjectSkillVerificationCompletedEvent(
+                        UUID.randomUUID(),
                         project.getId(),
                         List.of(new SkillVerificationResult(skillId, false)))
         );
