@@ -24,31 +24,29 @@ public class SkillCompletedConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void handleSkillVerificationCompleted(ProjectSkillVerificationCompletedEvent event) {
-        log.info("received ProjectSkillVerificationCompletedEvent: {}", event);
+
+        log.info("Received ProjectSkillVerificationCompletedEvent: {}", event);
 
         if (processedEventRepository.existsById(event.eventId())) {
-
-            log.info(
-                    "event already processed: {}",
-                    event.eventId()
-            );
-
+            log.warn("Duplicate ProjectSkillVerificationCompletedEvent ignored eventId={}", event.eventId());
             return;
         }
 
-        projectService.confirmSkillProject(event);
+        try {
+            projectService.confirmSkillProject(event);
 
-        ProcessedEvent processedEvent =
-                ProcessedEvent.builder()
-                        .eventId(event.eventId())
-                        .processedAt(Instant.now())
-                        .build();
+            ProcessedEvent processedEvent =
+                    ProcessedEvent.builder()
+                            .eventId(event.eventId())
+                            .processedAt(Instant.now())
+                            .build();
 
-        processedEventRepository.save(processedEvent);
+            processedEventRepository.save(processedEvent);
 
-        log.info(
-                "event processed successfully: {}",
-                event.eventId()
-        );
+            log.info("ProjectSkillVerificationCompletedEvent processed successfully eventId={}", event.eventId());
+        } catch (Exception ex) {
+            log.error("Failed to process ProjectSkillVerificationCompletedEvent eventId={}", event.eventId(), ex);
+            throw ex;
+        }
     }
 }

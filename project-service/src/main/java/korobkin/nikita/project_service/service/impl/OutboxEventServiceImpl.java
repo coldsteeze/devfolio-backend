@@ -23,7 +23,14 @@ public class OutboxEventServiceImpl implements OutboxEventService {
 
     @Override
     @Transactional
-    public void saveEvent(String aggregateType, UUID aggregateId, String eventType, Object payload) {
+    public void saveEvent(String aggregateType,
+                          UUID aggregateId,
+                          String eventType,
+                          Object payload) {
+
+        log.debug("Creating outbox event aggregateType={}, aggregateId={}, eventType={}",
+                aggregateType, aggregateId, eventType);
+
         try {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                     .id(UUID.randomUUID())
@@ -34,10 +41,15 @@ public class OutboxEventServiceImpl implements OutboxEventService {
                     .createdAt(Instant.now())
                     .build();
 
-            outboxEventRepository.save(outboxEvent);
+            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+
+            log.info("Outbox event saved id={}, aggregateId={}, eventType={}",
+                    saved.getId(), aggregateId, eventType);
 
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to serialize outbox event aggregateType={}, aggregateId={}, eventType={}",
+                    aggregateType, aggregateId, eventType, e);
+            throw new RuntimeException("Failed to serialize outbox event", e);
         }
     }
 }
