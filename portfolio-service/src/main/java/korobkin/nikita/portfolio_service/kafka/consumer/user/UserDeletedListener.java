@@ -21,11 +21,31 @@ public class UserDeletedListener {
             containerFactory = "userDeletedKafkaListenerContainerFactory"
     )
     public void handleUserDeleted(UserDeletedEvent event) {
-        log.info("received UserDeletedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received UserDeletedEvent eventId={}, userId={}",
                 event.eventId(),
-                () -> portfolioService.deletePortfolio(event)
+                event.userId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.deletePortfolio(event)
+            );
+
+            log.info(
+                    "UserDeletedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process UserDeletedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

@@ -21,29 +21,21 @@ public class ProcessedEventServiceImpl implements ProcessedEventService {
     @Override
     @Transactional
     public void process(UUID eventId, Runnable action) {
+
         if (processedEventRepository.existsById(eventId)) {
-
-            log.info(
-                    "event already processed: {}",
-                    eventId
-            );
-
+            log.warn("Duplicate event ignored eventId={}", eventId);
             return;
         }
 
         action.run();
 
-        ProcessedEvent processedEvent =
+        processedEventRepository.save(
                 ProcessedEvent.builder()
                         .eventId(eventId)
                         .processedAt(Instant.now())
-                        .build();
-
-        processedEventRepository.save(processedEvent);
-
-        log.info(
-                "event processed successfully: {}",
-                eventId
+                        .build()
         );
+
+        log.debug("Processed event saved eventId={}", eventId);
     }
 }

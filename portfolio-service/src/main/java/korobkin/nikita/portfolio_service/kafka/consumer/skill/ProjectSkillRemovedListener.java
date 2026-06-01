@@ -21,11 +21,31 @@ public class ProjectSkillRemovedListener {
             containerFactory = "projectSkillRemovedKafkaListenerContainerFactory"
     )
     public void handleProjectSkillRemoved(ProjectSkillRemovedEvent event) {
-        log.info("received ProjectSkillRemovedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received ProjectSkillRemovedEvent eventId={}, projectId={}",
                 event.eventId(),
-                () -> portfolioService.deletePortfolioProjectSkill(event)
+                event.projectId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.deletePortfolioProjectSkill(event)
+            );
+
+            log.info(
+                    "ProjectSkillRemovedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process ProjectSkillRemovedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

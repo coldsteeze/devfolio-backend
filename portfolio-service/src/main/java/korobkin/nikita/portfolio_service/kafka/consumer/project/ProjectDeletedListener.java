@@ -21,11 +21,30 @@ public class ProjectDeletedListener {
             containerFactory = "projectDeletedKafkaListenerContainerFactory"
     )
     public void handleProjectDeleted(ProjectDeletedEvent event) {
-        log.info("received ProjectDeletedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received ProjectDeletedEvent eventId={}, projectId={}",
                 event.eventId(),
-                () ->  portfolioService.deletePortfolioProject(event)
+                event.projectId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.deletePortfolioProject(event)
+            );
+
+            log.info(
+                    "ProjectDeletedEvent processed eventId={}",
+                    event.eventId()
+            );
+        } catch(Exception ex) {
+            log.error(
+                    "Failed to process ProjectDeletedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

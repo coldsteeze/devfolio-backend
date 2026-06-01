@@ -21,11 +21,32 @@ public class ProjectCreatedListener {
             containerFactory = "projectCreatedKafkaListenerContainerFactory"
     )
     public void handleProjectCreated(ProjectCreatedEvent event) {
-        log.info("received ProjectCreatedEvent: {}", event);
 
-        processedEventService.process(
+        log.info(
+                "Received ProjectCreatedEvent eventId={}, projectId={}",
                 event.eventId(),
-                () -> portfolioService.createPortfolioProject(event)
+                event.projectId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.createPortfolioProject(event)
+            );
+
+            log.info(
+                    "ProjectCreatedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process ProjectCreatedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

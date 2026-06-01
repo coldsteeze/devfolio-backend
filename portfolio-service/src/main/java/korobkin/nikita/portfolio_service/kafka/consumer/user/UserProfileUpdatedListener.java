@@ -21,11 +21,31 @@ public class UserProfileUpdatedListener {
             containerFactory = "userProfileUpdatedKafkaListenerContainerFactory"
     )
     public void handleUserProfileUpdated(UserProfileUpdatedEvent event) {
-        log.info("received UserProfileUpdatedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received UserProfileUpdatedEvent eventId={}, userId={}",
                 event.eventId(),
-                () -> portfolioService.createPortfolio(event)
+                event.userId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.createPortfolio(event)
+            );
+
+            log.info(
+                    "UserProfileUpdatedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process UserProfileUpdatedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

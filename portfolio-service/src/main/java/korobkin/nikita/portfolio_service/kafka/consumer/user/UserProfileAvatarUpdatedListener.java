@@ -21,11 +21,31 @@ public class UserProfileAvatarUpdatedListener {
             containerFactory = "userProfileAvatarUpdatedKafkaListenerContainerFactory"
     )
     public void handleUserProfileUpdated(UserProfileAvatarUpdatedEvent event) {
-        log.info("received UserProfileAvatarUpdatedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received UserProfileAvatarUpdatedEvent eventId={}, userId={}",
                 event.eventId(),
-                () -> portfolioService.updatePortfolioAvatar(event)
+                event.userId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.updatePortfolioAvatar(event)
+            );
+
+            log.info(
+                    "UserProfileAvatarUpdatedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process UserProfileAvatarUpdatedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }

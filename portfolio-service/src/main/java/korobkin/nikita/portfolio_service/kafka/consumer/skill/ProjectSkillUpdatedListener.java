@@ -21,11 +21,31 @@ public class ProjectSkillUpdatedListener {
             containerFactory = "projectSkillsUpdatedKafkaListenerContainerFactory"
     )
     public void handleProjectSkillsUpdated(ProjectSkillsUpdatedEvent event) {
-        log.info("received ProjectSkillsUpdatedEvent: {}", event);
 
-        processedEventService.process(
+        log.info("Received ProjectSkillsUpdatedEvent eventId={}, projectId={}",
                 event.eventId(),
-                () -> portfolioService.updatePortfolioProjectSkill(event)
+                event.projectId()
         );
+
+        try {
+            processedEventService.process(
+                    event.eventId(),
+                    () -> portfolioService.updatePortfolioProjectSkill(event)
+            );
+
+            log.info(
+                    "ProjectSkillsUpdatedEvent processed eventId={}",
+                    event.eventId()
+            );
+
+        } catch (Exception ex) {
+            log.error(
+                    "Failed to process ProjectSkillsUpdatedEvent eventId={}",
+                    event.eventId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 }
