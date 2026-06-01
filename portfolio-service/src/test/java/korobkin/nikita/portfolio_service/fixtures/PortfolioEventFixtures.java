@@ -12,6 +12,7 @@ public class PortfolioEventFixtures {
 
     public static UserProfileUpdatedEvent create(UUID userId) {
         return new UserProfileUpdatedEvent(
+                UUID.randomUUID(),
                 userId,
                 "nick_" + UUID.randomUUID(),
                 "John",
@@ -24,6 +25,7 @@ public class PortfolioEventFixtures {
 
     public static UserProfileUpdatedEvent update(UUID userId) {
         return new UserProfileUpdatedEvent(
+                UUID.randomUUID(),
                 userId,
                 "newNick",
                 "New",
@@ -35,6 +37,6 @@ public class PortfolioEventFixtures {
     }
 
     public static UserDeletedEvent delete(UUID userId) {
-        return new UserDeletedEvent(userId);
+        return new UserDeletedEvent(UUID.randomUUID(), userId);
     }
 }

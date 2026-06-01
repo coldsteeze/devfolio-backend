@@ -12,6 +12,7 @@ public class ProjectEventFixtures {
 
     public static ProjectCreatedEvent create(UUID projectId, UUID userId, boolean isPublic) {
         return new ProjectCreatedEvent(
+                UUID.randomUUID(),
                 projectId,
                 userId,
                 "proj",
@@ -23,6 +24,7 @@ public class ProjectEventFixtures {
 
     public static ProjectUpdatedEvent update(UUID projectId, UUID userId, boolean isPublic) {
         return new ProjectUpdatedEvent(
+                UUID.randomUUID(),
                 projectId,
                 userId,
                 "newName",
@@ -33,6 +35,6 @@ public class ProjectEventFixtures {
     }
 
     public static ProjectDeletedEvent delete(UUID projectId) {
-        return new ProjectDeletedEvent(projectId);
+        return new ProjectDeletedEvent(UUID.randomUUID(), projectId);
     }
 }
