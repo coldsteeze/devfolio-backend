@@ -16,10 +16,7 @@ import korobkin.nikita.skill_verification_service.rule.SkillVerificationRule;
 import korobkin.nikita.skill_verification_service.service.VerificationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,10 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-public class VerificationServiceIntegrationTest {
+public class VerificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private VerificationService service;
