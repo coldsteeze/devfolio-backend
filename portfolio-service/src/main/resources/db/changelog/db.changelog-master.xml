@@ -9,4 +9,5 @@
     <include file="db/changelog/changes/001_create_portfolios_table.xml"/>
     <include file="db/changelog/changes/002_create_portfolio_projects_table.xml"/>
     <include file="db/changelog/changes/003_create_portfolio_project_skills_table.xml"/>
+    <include file="db/changelog/changes/004_create_processed_events_table.xml"/>
 </databaseChangeLog>

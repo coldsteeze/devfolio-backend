@@ -31,9 +31,11 @@ public interface ProjectMapper {
     ProjectDetailsResponse toDetailsDto(Project project);
 
     @Mapping(target = "projectId", source = "id")
+    @Mapping(target = "eventId", expression = "java(java.util.UUID.randomUUID())")
     ProjectCreatedEvent toProjectCreatedEvent(Project project);
 
     @Mapping(target = "projectId", source = "id")
+    @Mapping(target = "eventId", expression = "java(java.util.UUID.randomUUID())")
     ProjectUpdatedEvent toProjectUpdatedEvent(Project project);
 
     Project toEntity(CreateProjectRequest request);

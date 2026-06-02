@@ -24,6 +24,7 @@ public interface ProjectSkillMapper {
     ProjectSkill toEntity(SkillResponse response);
 
     @Mapping(target = "projectId", source = "project.id")
+    @Mapping(target = "eventId", expression = "java(java.util.UUID.randomUUID())")
     ProjectSkillAddedEvent toProjectSkillAddedEvent(ProjectSkill projectSkill);
 
     List<ProjectSkillDto> toProjectSkillDto(List<ProjectSkill> skills);

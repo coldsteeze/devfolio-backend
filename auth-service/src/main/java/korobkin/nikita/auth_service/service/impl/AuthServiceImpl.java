@@ -4,19 +4,19 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.transaction.Transactional;
-import korobkin.nikita.auth_service.entity.enums.UserRole;
-import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.dto.internal.JwtTokens;
 import korobkin.nikita.auth_service.dto.request.LoginRequest;
 import korobkin.nikita.auth_service.dto.request.RegisterRequest;
 import korobkin.nikita.auth_service.entity.User;
+import korobkin.nikita.auth_service.entity.enums.UserRole;
 import korobkin.nikita.auth_service.exception.*;
-import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
+import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.security.jwt.JwtService;
 import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
 import korobkin.nikita.auth_service.service.AuthService;
+import korobkin.nikita.auth_service.service.OutboxEventService;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
@@ -44,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenCacheService tokenService;
     private final JwtProperties jwtProperties;
-    private final UserEventProducer userEventProducer;
+    private final OutboxEventService outboxEventService;
 
     @Override
     @Transactional
@@ -71,7 +71,18 @@ public class AuthServiceImpl implements AuthService {
                 jwtProperties.getRefreshTokenExpirationDays()
         );
 
-        userEventProducer.sendUserCreated(new UserCreatedEvent(user.getId()));
+        UserCreatedEvent event =
+                new UserCreatedEvent(
+                        UUID.randomUUID(),
+                        user.getId()
+                );
+
+        outboxEventService.saveEvent(
+                "USER",
+                user.getId(),
+                "user-created",
+                event
+        );
 
         return new JwtTokens(access, refresh, jwtProperties.getAccessTokenExpirationMinutes());
     }

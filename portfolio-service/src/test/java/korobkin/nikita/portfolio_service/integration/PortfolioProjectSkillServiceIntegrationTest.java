@@ -51,6 +51,7 @@ class PortfolioProjectSkillServiceIntegrationTest extends AbstractIntegrationTes
 
         service.addPortfolioProjectSkill(
                 new ProjectSkillAddedEvent(
+                        UUID.randomUUID(),
                         project.getProjectId(),
                         "Java",
                         SkillCategory.LANGUAGE
@@ -71,11 +72,11 @@ class PortfolioProjectSkillServiceIntegrationTest extends AbstractIntegrationTes
         PortfolioProject project = createProject();
 
         service.addPortfolioProjectSkill(
-                new ProjectSkillAddedEvent(project.getProjectId(), "Java", SkillCategory.LANGUAGE)
+                new ProjectSkillAddedEvent(UUID.randomUUID(), project.getProjectId(), "Java", SkillCategory.LANGUAGE)
         );
 
         service.addPortfolioProjectSkill(
-                new ProjectSkillAddedEvent(project.getProjectId(), "Java", SkillCategory.LANGUAGE)
+                new ProjectSkillAddedEvent(UUID.randomUUID(), project.getProjectId(), "Java", SkillCategory.LANGUAGE)
         );
 
         PortfolioProject updated = projectRepository.findById(project.getProjectId())
@@ -94,7 +95,7 @@ class PortfolioProjectSkillServiceIntegrationTest extends AbstractIntegrationTes
         projectRepository.save(project);
 
         service.deletePortfolioProjectSkill(
-                new ProjectSkillRemovedEvent(project.getProjectId(), "Java")
+                new ProjectSkillRemovedEvent(UUID.randomUUID(), project.getProjectId(), "Java")
         );
 
         PortfolioProject updated = projectRepository.findById(project.getProjectId())
@@ -114,6 +115,7 @@ class PortfolioProjectSkillServiceIntegrationTest extends AbstractIntegrationTes
 
         service.updatePortfolioProjectSkill(
                 new ProjectSkillsUpdatedEvent(
+                        UUID.randomUUID(),
                         project.getProjectId(),
                         List.of(new ProjectSkillDto("Java", true))
                 )

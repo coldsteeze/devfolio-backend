@@ -62,7 +62,7 @@ public class PortfolioProjectServiceImpl implements PortfolioProjectService {
         if (existing == null) {
             PortfolioProject project = mapper.toEntity(event);
             portfolio.addProject(project);
-            projectRepository.save(project);
+            portfolioRepository.save(portfolio);
             return;
         }
 

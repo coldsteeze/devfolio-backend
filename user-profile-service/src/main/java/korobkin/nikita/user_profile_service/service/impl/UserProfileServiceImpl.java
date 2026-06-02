@@ -15,11 +15,10 @@ import korobkin.nikita.user_profile_service.exception.NicknameAlreadyTakenExcept
 import korobkin.nikita.user_profile_service.exception.UserProfileAvatarNotFoundException;
 import korobkin.nikita.user_profile_service.exception.UserProfileNotFoundException;
 import korobkin.nikita.user_profile_service.exception.media.MediaErrorMapper;
-import korobkin.nikita.user_profile_service.kafka.producer.UserProfileDeletedEventProducer;
-import korobkin.nikita.user_profile_service.kafka.producer.UserProfileUpdatedEventProducer;
 import korobkin.nikita.user_profile_service.mapper.UserProfileMapper;
 import korobkin.nikita.user_profile_service.repository.UserProfileRepository;
 import korobkin.nikita.user_profile_service.security.user.UserPrincipal;
+import korobkin.nikita.user_profile_service.service.OutboxEventService;
 import korobkin.nikita.user_profile_service.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +38,9 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
-    private final UserProfileDeletedEventProducer userProfileDeletedEventProducer;
-    private final UserProfileUpdatedEventProducer userProfileUpdatedEventProducer;
     private final MediaClient mediaClient;
     private final MediaErrorMapper mediaErrorMapper;
+    private final OutboxEventService outboxEventService;
 
     @Override
     @Transactional
@@ -69,7 +67,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfileRepository.save(userProfile);
         log.info("UserProfile with id: {} data has been filled in DB", userProfile.getUserId());
 
-        userProfileUpdatedEventProducer.sendUserProfileUpdated(
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                id,
+                "user-profile-updated",
                 userProfileMapper.toUpdatedEvent(userProfile)
         );
 
@@ -84,15 +85,34 @@ public class UserProfileServiceImpl implements UserProfileService {
         userProfileRepository.save(userProfile);
         log.info("UserProfile with id: {} data has been updated in DB", userProfile.getUserId());
 
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                id,
+                "user-profile-updated",
+                userProfileMapper.toUpdatedEvent(userProfile)
+        );
+
         return userProfileMapper.toDto(userProfile);
     }
 
     @Override
     @Transactional
     public void deleteUserProfile(UUID id) {
-        userProfileRepository.deleteById(id);
-        log.info("UserProfile with id: {} delete in DB", id);
-        userProfileDeletedEventProducer.sendUserDeleted(new UserDeletedEvent(id));
+        UserProfile profile = userProfileRepository.findById(id)
+                .orElseThrow(() -> new UserProfileNotFoundException(ErrorCode.PROFILE_NOT_FOUND));
+
+        userProfileRepository.delete(profile);
+
+        log.info("UserProfile with id: {} deleted", id);
+
+        UserDeletedEvent event = new UserDeletedEvent(UUID.randomUUID(), id);
+
+        outboxEventService.saveEvent(
+                "USER",
+                id,
+                "user-deleted",
+                event
+        );
     }
 
     @Override
@@ -118,6 +138,13 @@ public class UserProfileServiceImpl implements UserProfileService {
             }
         }
 
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                principal.userId(),
+                "user-profile-avatar-updated",
+                userProfileMapper.toAvatarUpdatedEvent(userProfile)
+        );
+
         return response;
     }
 
@@ -133,6 +160,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         safeDelete(userProfile.getAvatarUrl());
 
         userProfile.setAvatarUrl(null);
+
+        outboxEventService.saveEvent(
+                "USER-PROFILE",
+                principal.userId(),
+                "user-profile-avatar-updated",
+                userProfileMapper.toAvatarUpdatedEvent(userProfile)
+        );
     }
 
     @Override

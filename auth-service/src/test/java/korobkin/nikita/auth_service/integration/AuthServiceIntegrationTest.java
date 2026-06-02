@@ -7,10 +7,8 @@ import korobkin.nikita.auth_service.exception.InvalidCredentialsException;
 import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
 import korobkin.nikita.auth_service.fixtures.JwtTokenFixtures;
-import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.service.AuthService;
-import korobkin.nikita.events.UserCreatedEvent;
 import korobkin.nikita.events.UserDeletedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,12 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 
 class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -38,9 +35,6 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @MockitoSpyBean
-    private UserEventProducer userEventProducer;
 
     @BeforeEach
     void cleanDb() {
@@ -92,14 +86,6 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         String stored = redisTemplate.opsForValue().get("refresh:" + user.getId());
         assertThat(stored).isEqualTo(tokens.getRefreshToken());
-    }
-
-    @Test
-    void register_userCreatedEventSent() {
-        authService.register(AuthRequestFixtures.registerRequest());
-
-        verify(userEventProducer)
-                .sendUserCreated(any(UserCreatedEvent.class));
     }
 
     @Test
@@ -211,7 +197,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(userRepository.findById(user.getId())).isPresent();
 
-        authService.deleteUser(new UserDeletedEvent(user.getId()));
+        authService.deleteUser(new UserDeletedEvent(UUID.randomUUID(), user.getId()));
 
         assertThat(userRepository.findById(user.getId())).isEmpty();
     }

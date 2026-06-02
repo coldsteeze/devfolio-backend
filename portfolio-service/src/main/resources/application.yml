@@ -14,16 +14,13 @@ spring:
     consumer:
       group-id: portfolio-group
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "korobkin.nikita.events"
 
 app:
   kafka:
     topics:
       user-deleted: user-deleted
       user-profile-updated: user-profile-updated
+      user-profile-avatar-updated: user-profile-avatar-updated
       project-created: project-created
       project-updated: project-updated
       project-deleted: project-deleted

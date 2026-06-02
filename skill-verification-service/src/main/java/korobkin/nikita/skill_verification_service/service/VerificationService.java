@@ -4,10 +4,8 @@ import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.events.ProjectSkillVerificationRequestedEvent;
 import korobkin.nikita.events.skill.SkillShortInfo;
 import korobkin.nikita.events.skill.SkillVerificationResult;
-import korobkin.nikita.skill_verification_service.config.KafkaTopicProperties;
 import korobkin.nikita.skill_verification_service.entity.VerifiedSkill;
 import korobkin.nikita.skill_verification_service.gateway.RepositoryGateway;
-import korobkin.nikita.skill_verification_service.kafka.producer.VerificationProducer;
 import korobkin.nikita.skill_verification_service.model.ProjectData;
 import korobkin.nikita.skill_verification_service.repository.VerifiedSkillRepository;
 import korobkin.nikita.skill_verification_service.rule.RuleRegistry;
@@ -19,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +27,7 @@ public class VerificationService {
     private final RepositoryGateway gateway;
     private final RuleRegistry registry;
     private final VerifiedSkillRepository repository;
-    private final VerificationProducer verificationProducer;
-    private final KafkaTopicProperties kafkaTopicProperties;
+    private final OutboxEventService outboxEventService;
 
     @Transactional
     public void verify(ProjectSkillVerificationRequestedEvent event) {
@@ -55,14 +53,19 @@ public class VerificationService {
         log.info("Verification completed: projectId={}, verifiedSkills={}",
                 event.projectId(), result.size());
 
-        verificationProducer.sendSync(
-                kafkaTopicProperties.getProjectSkillVerificationCompleted(),
-                new ProjectSkillVerificationCompletedEvent(
-                        event.projectId(),
-                        result.stream()
-                                .map(vs -> new SkillVerificationResult(vs.getProjectSkillId(), true))
-                                .toList()
-                )
+        ProjectSkillVerificationCompletedEvent completedEvent = new ProjectSkillVerificationCompletedEvent(
+                UUID.randomUUID(),
+                event.projectId(),
+                result.stream()
+                        .map(vs -> new SkillVerificationResult(vs.getProjectSkillId(), true))
+                        .toList()
+        );
+
+        outboxEventService.saveEvent(
+                "PROJECT",
+                event.projectId(),
+                "project.skill.verification.completed",
+                completedEvent
         );
     }
 

@@ -13,12 +13,12 @@ import korobkin.nikita.auth_service.exception.InvalidRefreshTokenException;
 import korobkin.nikita.auth_service.fixtures.AuthRequestFixtures;
 import korobkin.nikita.auth_service.fixtures.JwtTokenFixtures;
 import korobkin.nikita.auth_service.fixtures.UserFixtures;
-import korobkin.nikita.auth_service.kafka.producer.UserEventProducer;
 import korobkin.nikita.auth_service.mapper.UserMapper;
 import korobkin.nikita.auth_service.repository.UserRepository;
 import korobkin.nikita.auth_service.security.jwt.JwtProperties;
 import korobkin.nikita.auth_service.security.jwt.JwtService;
 import korobkin.nikita.auth_service.security.user.UserDetailsImpl;
+import korobkin.nikita.auth_service.service.OutboxEventService;
 import korobkin.nikita.auth_service.service.TokenCacheService;
 import korobkin.nikita.auth_service.service.impl.AuthServiceImpl;
 import korobkin.nikita.events.UserCreatedEvent;
@@ -73,7 +73,7 @@ public class AuthServiceUnitTest {
     private JwtProperties jwtProperties;
 
     @Mock
-    private UserEventProducer userEventProducer;
+    private OutboxEventService outboxEventService;
 
     private Authentication authentication;
 
@@ -112,6 +112,13 @@ public class AuthServiceUnitTest {
             doNothing().when(tokenService).saveRefreshToken(any(UUID.class), anyString(), anyLong());
 
             JwtTokens tokens = authService.register(registerRequest);
+
+            verify(outboxEventService).saveEvent(
+                    eq("USER"),
+                    eq(userId),
+                    eq("user-created"),
+                    any(UserCreatedEvent.class)
+            );
 
             assertThat(user.getLoggedAt()).isNotNull();
             assertThat(tokens.getAccessToken()).isEqualTo(JwtTokenFixtures.DEFAULT_ACCESS_TOKEN);
@@ -168,18 +175,6 @@ public class AuthServiceUnitTest {
 
             assertThat(user.getLoggedAt()).isNotNull();
             verify(tokenService).saveRefreshToken(userId, JwtTokenFixtures.DEFAULT_REFRESH_TOKEN, 7L);
-        }
-
-        @Test
-        @DisplayName("Should publish user created event after successful registration")
-        void register_shouldSendUserCreatedEvent_afterSuccessfulRegistration() {
-            mockSuccessfulRegistration();
-
-            authService.register(registerRequest);
-
-            ArgumentCaptor<UserCreatedEvent> captor = ArgumentCaptor.forClass(UserCreatedEvent.class);
-            verify(userEventProducer).sendUserCreated(captor.capture());
-            assertThat(captor.getValue().userId()).isEqualTo(userId);
         }
     }
 
@@ -386,7 +381,7 @@ public class AuthServiceUnitTest {
         @Test
         @DisplayName("Should delete user and refresh token when UserDeletedEvent is received")
         void deleteUser_shouldDeleteUser_andRefreshToken_whenUserExists() {
-            authService.deleteUser(new UserDeletedEvent(userId));
+            authService.deleteUser(new UserDeletedEvent(UUID.randomUUID(), userId));
 
             verify(userRepository).deleteById(userId);
             verify(tokenService).deleteRefreshToken(userId);
