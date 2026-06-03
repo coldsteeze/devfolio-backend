@@ -21,6 +21,12 @@ public record PortfolioProjectResponse(
         String name,
 
         @Schema(
+                description = "Short project description for preview",
+                example = "Platform for developers to showcase projects"
+        )
+        String shortDescription,
+
+        @Schema(
                 description = "Project description",
                 example = "Microservice for managing user portfolios with Spring Boot"
         )
@@ -37,6 +43,12 @@ public record PortfolioProjectResponse(
                 example = "true"
         )
         boolean projectPublic,
+
+        @Schema(
+                description = "URL of the main project image",
+                example = "https://cdn.example.com/projects/123/main.jpg"
+        )
+        String mainImageUrl,
 
         @Schema(description = "List of skills used in the project")
         List<PortfolioProjectSkillResponse> skills
