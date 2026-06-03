@@ -2,6 +2,7 @@ package korobkin.nikita.portfolio_service.service.impl;
 
 import korobkin.nikita.events.ProjectCreatedEvent;
 import korobkin.nikita.events.ProjectDeletedEvent;
+import korobkin.nikita.events.ProjectPreviewUpdatedEvent;
 import korobkin.nikita.events.ProjectUpdatedEvent;
 import korobkin.nikita.portfolio_service.entity.Portfolio;
 import korobkin.nikita.portfolio_service.entity.PortfolioProject;
@@ -83,6 +84,18 @@ public class PortfolioProjectServiceImpl implements PortfolioProjectService {
         projectRepository.delete(project);
 
         log.info("Project deleted: {}", event.projectId());
+    }
+
+    @Override
+    @Transactional
+    public void updatePortfolioProjectPreview(ProjectPreviewUpdatedEvent event) {
+        PortfolioProject existing = projectRepository.findById(event.projectId()).orElse(null);
+
+        if (existing == null) {
+            return;
+        }
+
+        mapper.updateEntityFromEvent(event, existing);
     }
 
     private Portfolio getPortfolio(UUID userId) {
