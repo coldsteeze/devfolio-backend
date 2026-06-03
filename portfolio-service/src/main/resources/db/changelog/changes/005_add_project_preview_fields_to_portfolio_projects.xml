@@ -1,0 +1,14 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+      http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="005" author="nikita.korobkin">
+        <sqlFile path="../sql/005_add_project_preview_fields_to_portfolio_projects.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="true"
+                 endDelimiter=";"/>
+    </changeSet>
+</databaseChangeLog>

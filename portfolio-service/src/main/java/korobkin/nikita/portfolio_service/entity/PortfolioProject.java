@@ -23,6 +23,9 @@ public class PortfolioProject {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "short_description")
+    private String shortDescription;
+
     @Column(name = "description")
     private String description;
 
@@ -31,6 +34,9 @@ public class PortfolioProject {
 
     @Column(name = "project_public")
     private boolean projectPublic;
+
+    @Column(name = "main_image_url")
+    private String mainImageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portfolio_id")
