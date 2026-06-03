@@ -144,7 +144,9 @@ class PortfolioProjectServiceIntegrationTest extends AbstractIntegrationTest {
         PortfolioProject updated = projectRepository.findById(projectId).orElseThrow();
 
         assertThat(updated.getName()).isEqualTo("newName");
-        assertThat(updated.getDescription()).isEqualTo("newDesc");
+        assertThat(updated.getDescription()).isEqualTo("desc");
+        assertThat(updated.getShortDescription()).isEqualTo("short desc");
+        assertThat(updated.getMainImageUrl()).isEqualTo("mainImageUrl");
         assertThat(updated.getGithubUrl()).isEqualTo("newGit");
     }
 
