@@ -2,6 +2,7 @@ package korobkin.nikita.project_service.service;
 
 import korobkin.nikita.events.ProjectSkillVerificationCompletedEvent;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFeedFilter;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
@@ -40,7 +41,7 @@ public interface ProjectService {
 
     List<ProjectSkillResponse> getProjectSkills(UUID projectId, UserPrincipal user);
 
-    PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable);
+    PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable, ProjectFeedFilter filter);
 
     MediaResponse uploadPreviewPhoto(UUID projectId, UserPrincipal currentUser, MultipartFile file);
 

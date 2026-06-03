@@ -6,6 +6,7 @@ import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.PagedResponse;
 import korobkin.nikita.project_service.dto.response.ProjectDetailsResponse;
+import korobkin.nikita.project_service.dto.response.ProjectFeedResponse;
 import korobkin.nikita.project_service.dto.response.ProjectResponse;
 import korobkin.nikita.project_service.entity.Project;
 import org.mapstruct.Mapper;
@@ -39,4 +40,8 @@ public interface ProjectMapper {
     ProjectUpdatedEvent toProjectUpdatedEvent(Project project);
 
     Project toEntity(CreateProjectRequest request);
+
+    @Mapping(target = "pageNumber", source = "number")
+    @Mapping(target = "pageSize", source = "size")
+    PagedResponse<ProjectFeedResponse> toPagedFeedDto(Page<Project> projectsPage);
 }
