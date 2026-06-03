@@ -20,4 +20,5 @@ public class KafkaTopicProperties {
     private String projectSkillAdded;
     private String projectSkillRemoved;
     private String projectSkillsUpdated;
+    private String projectPreviewUpdated;
 }
