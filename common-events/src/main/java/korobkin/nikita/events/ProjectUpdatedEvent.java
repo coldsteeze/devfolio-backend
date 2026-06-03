@@ -7,8 +7,10 @@ public record ProjectUpdatedEvent(
         UUID projectId,
         UUID userId,
         String name,
+        String shortDescription,
         String description,
         String githubUrl,
+        String mainImageUrl,
         boolean projectPublic
 ) {
 }

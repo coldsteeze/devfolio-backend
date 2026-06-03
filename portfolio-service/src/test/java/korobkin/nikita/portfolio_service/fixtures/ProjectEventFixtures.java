@@ -16,6 +16,7 @@ public class ProjectEventFixtures {
                 projectId,
                 userId,
                 "proj",
+                "short desc",
                 "desc",
                 "git",
                 isPublic
@@ -28,8 +29,10 @@ public class ProjectEventFixtures {
                 projectId,
                 userId,
                 "newName",
-                "newDesc",
+                "short desc",
+                "desc",
                 "newGit",
+                "mainImageUrl",
                 isPublic
         );
     }

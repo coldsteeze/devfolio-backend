@@ -295,6 +295,19 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
+        ProjectPreviewUpdatedEvent event = new ProjectPreviewUpdatedEvent(
+                UUID.randomUUID(),
+                projectId,
+                response.url()
+        );
+
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-preview-updated",
+                event
+        );
+
         return response;
     }
 
@@ -336,6 +349,19 @@ public class ProjectServiceImpl implements ProjectService {
         safeDelete(project.getMainImageUrl());
 
         project.setMainImageUrl(null);
+
+        ProjectPreviewUpdatedEvent event = new ProjectPreviewUpdatedEvent(
+                UUID.randomUUID(),
+                projectId,
+                null
+        );
+
+        outboxEventService.saveEvent(
+                "PROJECT",
+                project.getId(),
+                "project-preview-updated",
+                event
+        );
     }
 
     @Override

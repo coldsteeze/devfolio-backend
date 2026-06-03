@@ -106,4 +106,11 @@ public class KafkaConsumerConfig {
 
         return kafkaListenerContainerFactory(ProjectSkillsUpdatedEvent.class);
     }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ProjectPreviewUpdatedEvent>
+    projectPreviewUpdatedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(ProjectPreviewUpdatedEvent.class);
+    }
 }
