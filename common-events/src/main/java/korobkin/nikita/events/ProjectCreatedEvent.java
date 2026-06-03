@@ -7,6 +7,7 @@ public record ProjectCreatedEvent(
         UUID projectId,
         UUID userId,
         String name,
+        String shortDescription,
         String description,
         String githubUrl,
         boolean projectPublic
