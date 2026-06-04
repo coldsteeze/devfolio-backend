@@ -1,12 +1,15 @@
 package korobkin.nikita.project_service.service.impl;
 
 import feign.FeignException;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import korobkin.nikita.events.*;
 import korobkin.nikita.events.skill.SkillVerificationResult;
 import korobkin.nikita.project_service.client.MediaClient;
 import korobkin.nikita.project_service.config.ProjectImageProperties;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFeedFilter;
 import korobkin.nikita.project_service.dto.request.ProjectFilterRequest;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
@@ -254,16 +257,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable) {
-        Page<ProjectFeedResponse> page = projectRepository.findFeed(pageable);
+    public PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable, ProjectFeedFilter filter) {
+        Page<Project> page = getProjectFeedWithFilters(filter, pageable);
 
-        return new PagedResponse<>(
-                page.getContent(),
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages()
-        );
+        return projectMapper.toPagedFeedDto(page);
     }
 
     @Override
@@ -496,6 +493,65 @@ public class ProjectServiceImpl implements ProjectService {
             }
             if (filter.getCreatedBefore() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), filter.getCreatedBefore()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return projectRepository.findAll(spec, pageable);
+    }
+
+    private Page<Project> getProjectFeedWithFilters(
+            ProjectFeedFilter filter,
+            Pageable pageable) {
+
+        Specification<Project> spec = (root, query, cb) -> {
+
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.isTrue(root.get("projectPublic")));
+
+            boolean hasSkillFilter =
+                    filter.getSkillIds() != null
+                            && !filter.getSkillIds().isEmpty();
+
+            boolean hasCategoryFilter =
+                    filter.getCategories() != null
+                            && !filter.getCategories().isEmpty();
+
+            Join<Project, ProjectSkill> skillJoin = null;
+
+            if (hasSkillFilter || hasCategoryFilter) {
+                skillJoin = root.join("skills", JoinType.INNER);
+            }
+
+            if (hasSkillFilter) {
+                predicates.add(
+                        skillJoin.get("skillId")
+                                .in(filter.getSkillIds())
+                );
+            }
+
+            if (hasCategoryFilter) {
+                predicates.add(
+                        skillJoin.get("skillCategory")
+                                .in(filter.getCategories())
+                );
+            }
+
+            if (filter.getName() != null
+                    && !filter.getName().isBlank()) {
+
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("name")),
+                                "%" + filter.getName().toLowerCase() + "%"
+                        )
+                );
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFeedFilter;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
@@ -477,8 +478,9 @@ public interface ProjectControllerDocs {
             description = "Project feed with a brief description and a photo of the project"
     )
     ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
-            @ParameterObject Pageable pageable
-    );
+            @ParameterObject Pageable pageable,
+            @ParameterObject ProjectFeedFilter filter
+            );
 
 
     @Operation(

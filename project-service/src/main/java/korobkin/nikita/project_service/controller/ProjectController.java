@@ -3,6 +3,7 @@ package korobkin.nikita.project_service.controller;
 import jakarta.validation.Valid;
 import korobkin.nikita.project_service.docs.ProjectControllerDocs;
 import korobkin.nikita.project_service.dto.request.CreateProjectRequest;
+import korobkin.nikita.project_service.dto.request.ProjectFeedFilter;
 import korobkin.nikita.project_service.dto.request.UpdateProjectRequest;
 import korobkin.nikita.project_service.dto.response.*;
 import korobkin.nikita.project_service.dto.response.media.MediaResponse;
@@ -94,8 +95,9 @@ public class ProjectController implements ProjectControllerDocs {
 
     @GetMapping
     public ResponseEntity<PagedResponse<ProjectFeedResponse>> getProjectsFeed(
-            @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(projectService.getProjectsFeed(pageable));
+            @PageableDefault(size = 10) Pageable pageable,
+            ProjectFeedFilter filter) {
+        return ResponseEntity.ok(projectService.getProjectsFeed(pageable, filter));
     }
 
     @PostMapping(value = "/{projectId}/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
