@@ -501,7 +501,10 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.findAll(spec, pageable);
     }
 
-    private Page<Project> getProjectFeedWithFilters(ProjectFeedFilter filter, Pageable pageable) {
+    private Page<Project> getProjectFeedWithFilters(
+            ProjectFeedFilter filter,
+            Pageable pageable) {
+
         Specification<Project> spec = (root, query, cb) -> {
 
             if (query != null) {
@@ -512,24 +515,42 @@ public class ProjectServiceImpl implements ProjectService {
 
             predicates.add(cb.isTrue(root.get("projectPublic")));
 
-            if (filter.getSkillIds() != null && !filter.getSkillIds().isEmpty()) {
+            boolean hasSkillFilter =
+                    filter.getSkillIds() != null
+                            && !filter.getSkillIds().isEmpty();
 
-                Join<Project, ProjectSkill> skillJoin =
-                        root.join("skills", JoinType.INNER);
+            boolean hasCategoryFilter =
+                    filter.getCategories() != null
+                            && !filter.getCategories().isEmpty();
 
+            Join<Project, ProjectSkill> skillJoin = null;
+
+            if (hasSkillFilter || hasCategoryFilter) {
+                skillJoin = root.join("skills", JoinType.INNER);
+            }
+
+            if (hasSkillFilter) {
                 predicates.add(
-                        skillJoin.get("skillId").in(filter.getSkillIds())
+                        skillJoin.get("skillId")
+                                .in(filter.getSkillIds())
                 );
             }
 
-            if (filter.getCategories() != null && !filter.getCategories().isEmpty()) {
-
-                Join<Project, ProjectSkill> skillJoin =
-                        root.join("skills", JoinType.INNER);
-
+            if (hasCategoryFilter) {
                 predicates.add(
                         skillJoin.get("skillCategory")
                                 .in(filter.getCategories())
+                );
+            }
+
+            if (filter.getName() != null
+                    && !filter.getName().isBlank()) {
+
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("name")),
+                                "%" + filter.getName().toLowerCase() + "%"
+                        )
                 );
             }
 

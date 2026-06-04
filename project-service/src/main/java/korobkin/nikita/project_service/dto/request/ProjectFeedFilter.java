@@ -28,4 +28,10 @@ public class ProjectFeedFilter {
             example = "[\"LANGUAGE\", \"FRAMEWORK\"]"
     )
     private List<SkillCategory> categories;
+
+    @Schema(
+            description = "Search projects by name",
+            example = "Devfolio"
+    )
+    private String name;
 }
