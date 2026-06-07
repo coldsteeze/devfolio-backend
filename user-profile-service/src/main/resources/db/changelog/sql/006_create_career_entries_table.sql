@@ -9,7 +9,12 @@ CREATE TABLE career_entries
     start_month  INTEGER      NOT NULL,
     start_year   INTEGER      NOT NULL,
     end_month    INTEGER,
-    end_year     INTEGER
+    end_year     INTEGER,
+
+    CONSTRAINT fk_career_entries_user_profiles
+        FOREIGN KEY (user_id)
+        REFERENCES user_profiles(user_id)
+        ON DELETE CASCADE
 );
 
 CREATE INDEX idx_career_entries_user_id
