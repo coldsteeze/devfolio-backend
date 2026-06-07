@@ -11,4 +11,5 @@
     <include file="db/changelog/changes/003_add_user_type_to_profiles.xml"/>
     <include file="db/changelog/changes/004_create_processed_events_table.xml"/>
     <include file="db/changelog/changes/005_create_outbox_events_table.xml"/>
+    <include file="db/changelog/changes/006_create_career_entries_table.xml"/>
 </databaseChangeLog>
