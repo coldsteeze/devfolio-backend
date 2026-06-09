@@ -113,4 +113,11 @@ public class KafkaConsumerConfig {
 
         return kafkaListenerContainerFactory(ProjectPreviewUpdatedEvent.class);
     }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, UserProfileCareerUpdatedEvent>
+    userProfileCareerUpdatedKafkaListenerContainerFactory() {
+
+        return kafkaListenerContainerFactory(UserProfileCareerUpdatedEvent.class);
+    }
 }

@@ -47,5 +47,10 @@ public record PortfolioResponse(
         @Schema(
                 description = "List of user projects"
         )
-        List<PortfolioProjectResponse> projects
+        List<PortfolioProjectResponse> projects,
+
+        @Schema(
+                description = "Work experience and education history"
+        )
+        List<PortfolioCareerEntryResponse> career
 ) {}

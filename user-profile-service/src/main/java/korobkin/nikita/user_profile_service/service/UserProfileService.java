@@ -28,5 +28,5 @@ public interface UserProfileService {
 
     void deleteUserProfileAvatar(UserPrincipal principal);
 
-    PagedResponse<ProfileFeedResponse> getProfilesFeed(Pageable pageable);
+    PagedResponse<ProfileFeedResponse> getProfilesFeed(String search, Pageable pageable);
 }
