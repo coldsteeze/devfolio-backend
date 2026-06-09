@@ -17,4 +17,6 @@ public interface PortfolioService {
     PortfolioResponse getMyPortfolio(UserPrincipal currentUser);
 
     void updatePortfolioAvatar(UserProfileAvatarUpdatedEvent event);
+
+    void updatePortfolioCareerEntry(UserProfileCareerUpdatedEvent event);
 }
