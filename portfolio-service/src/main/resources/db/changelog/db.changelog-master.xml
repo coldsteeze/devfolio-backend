@@ -11,4 +11,5 @@
     <include file="db/changelog/changes/003_create_portfolio_project_skills_table.xml"/>
     <include file="db/changelog/changes/004_create_processed_events_table.xml"/>
     <include file="db/changelog/changes/005_add_project_preview_fields_to_portfolio_projects.xml"/>
+    <include file="db/changelog/changes/006_create_portfolio_career_entries_table.xml"/>
 </databaseChangeLog>
