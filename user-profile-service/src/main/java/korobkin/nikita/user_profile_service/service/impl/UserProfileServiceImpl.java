@@ -26,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -171,9 +172,20 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<ProfileFeedResponse> getProfilesFeed(Pageable pageable) {
-        Page<ProfileFeedResponse> page = userProfileRepository.findFeedProfiles(pageable);
+    public PagedResponse<ProfileFeedResponse> getProfilesFeed(String search, Pageable pageable) {
 
+        Page<ProfileFeedResponse> page;
+
+        if (StringUtils.hasText(search)) {
+            page = userProfileRepository.searchFeedProfiles(search.trim().toLowerCase(), pageable);
+        } else {
+            page = userProfileRepository.findFeedProfiles(pageable);
+        }
+
+        return toPaged(page);
+    }
+
+    private PagedResponse<ProfileFeedResponse> toPaged(Page<ProfileFeedResponse> page) {
         return new PagedResponse<>(
                 page.getContent(),
                 page.getNumber(),

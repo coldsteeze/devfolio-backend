@@ -75,7 +75,8 @@ public class UserProfileController implements UserProfileControllerDocs {
 
     @GetMapping
     public ResponseEntity<PagedResponse<ProfileFeedResponse>> getProfilesFeed(
+            @RequestParam(name = "search", required = false) String search,
             @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(userProfileService.getProfilesFeed(pageable));
+        return ResponseEntity.ok(userProfileService.getProfilesFeed(search, pageable));
     }
 }

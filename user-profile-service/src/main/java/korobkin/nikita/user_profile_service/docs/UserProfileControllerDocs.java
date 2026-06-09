@@ -353,6 +353,11 @@ public interface UserProfileControllerDocs {
             summary = "Profile feed"
     )
     ResponseEntity<PagedResponse<ProfileFeedResponse>> getProfilesFeed(
+            @Parameter(
+                    description = "Search by first name, last name or nickname",
+                    example = "nikita"
+            )
+            String search,
             @ParameterObject Pageable pageable
     );
 }
