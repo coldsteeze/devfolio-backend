@@ -33,7 +33,9 @@ import korobkin.nikita.project_service.service.ProjectSkillService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -258,7 +260,16 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<ProjectFeedResponse> getProjectsFeed(Pageable pageable, ProjectFeedFilter filter) {
-        Page<Project> page = getProjectFeedWithFilters(filter, pageable);
+        Sort sort = switch (filter.getSort()) {
+            case OLDEST -> Sort.by("createdAt").ascending();
+            case MOST_VIEWED -> Sort.by("viewsCount").descending();
+            case MOST_LIKED -> Sort.by("likesCount").descending();
+            default -> Sort.by("createdAt").descending();
+        };
+
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
+        Page<Project> page = getProjectFeedWithFilters(filter, sortedPageable);
 
         return projectMapper.toPagedFeedDto(page);
     }

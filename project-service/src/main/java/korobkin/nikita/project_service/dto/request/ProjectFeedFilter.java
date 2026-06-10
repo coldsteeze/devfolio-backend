@@ -2,6 +2,7 @@ package korobkin.nikita.project_service.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import korobkin.nikita.events.skill.SkillCategory;
+import korobkin.nikita.project_service.entity.enums.ProjectSort;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,4 +35,10 @@ public class ProjectFeedFilter {
             example = "Devfolio"
     )
     private String name;
+
+    @Schema(
+            description = "Project sorting mode",
+            example = "MOST_LIKED"
+    )
+    private ProjectSort sort = ProjectSort.NEWEST;
 }
