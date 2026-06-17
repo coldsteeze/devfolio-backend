@@ -27,6 +27,9 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, UUID> 
                 p.createdAt
             )
             FROM UserProfile p
+            WHERE p.nickname IS NOT NULL
+            AND p.firstName IS NOT NULL
+            AND p.lastName IS NOT NULL
             ORDER BY p.createdAt DESC
             """)
     Page<ProfileFeedResponse> findFeedProfiles(Pageable pageable);
